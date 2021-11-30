@@ -17,14 +17,16 @@ print(s)
 data_count = 0
 while (1):
 	try:
-		line = str(ser.readline(), 'ascii')
+		line = ''.join(map(chr,ser.readline()))
 		if line[0:6] == "$GPRMC":
-			newmsg=pynmea2.parse(line)
-			lat=newmsg.latitude
-			lng=newmsg.longitude
+			newmsg = pynmea2.parse(line)
+			lat = newmsg.latitude
+			lng = newmsg.longitude
 			gps = "Latitude=" + str(lat) + " and Longitude=" + str(lng)
 			data_count += 1
 			print("ID: {0} DATA: {1}".format(data_count, gps))
+		else:
+			print("NO GPRMC DATA")
 
 	except (serial.SerialException) as e:
 		print('Device error: {}'.format(e))
