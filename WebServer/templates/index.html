@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}!</title>
+    <link rel="stylesheet" href="../static/styles/css/bulma.min.css">
+</head>
+
+<body>
+    <section class="hero is-primary">
+        <div class="hero-body">
+            <p class="title">
+                Vehicle Data captured from Raspberry
+            </p>
+            <p class="subtitle">
+                The time is: {{ time }}
+            </p>
+        </div>
+    </section>
+    <div class="section columns">
+        <div class="is-half column">
+            <div class="notification is-primary">
+                <strong>GPS data:</strong> Latitude: <code>{{ latitude }}</code>, Longitude:
+                <code>{{ longitude }}</code>
+            </div>
+        </div>
+        <div class="is-half column">
+            <div class="notification is-primary">
+                <strong>Accelerometer data:</strong> X: <code>{{ accX }}</code>, Y: <code>{{ accY }}</code> , Z:
+                <code>{{ accZ }}</code>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
