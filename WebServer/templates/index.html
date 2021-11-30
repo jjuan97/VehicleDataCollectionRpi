@@ -9,30 +9,182 @@
 </head>
 
 <body>
-    <section class="hero is-primary">
+    <nav class="navbar is-light" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a id="navbar-btn" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbar">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+        <div id="navbar" class="navbar-menu mb-1">
+          <div class="navbar-start">
+            <a class="navbar-item">
+              Home
+            </a>
+            <a class="navbar-item">
+              Trip history
+            </a>
+          </div>
+    </nav>
+
+    <section class="hero is-primary is-small block">
         <div class="hero-body">
             <p class="title">
                 Vehicle Data captured from Raspberry
             </p>
-            <p class="subtitle">
-                The time is: {{ time }}
-            </p>
         </div>
     </section>
-    <div class="section columns">
-        <div class="is-half column">
-            <div class="notification is-primary">
-                <strong>GPS data:</strong> Latitude: <code>{{ latitude }}</code>, Longitude:
-                <code>{{ longitude }}</code>
+
+    <section class="section py-0">
+        <div class="columns">
+            <div class="field column">
+                <label class="label">Frequency (Hz):</label>
+                <div class="control">
+                  <input class="input" type="number" placeholder="e.g. 20">
+                </div>
+                <p class="help is-danger is-hidden">Enter a valid frequency and Greater than zero</p>
+            </div>
+            <div class="field column">
+                <label class="label">ID Vehicle:</label>
+                <div class="control">
+                    <input class="input" type="text" placeholder="e.g. Renault sandero - Juan">
+                </div>
+                <p class="help is-danger is-hidden">Enter a id for this vehicle</p>
+            </div>
+
+        </div>
+        
+        <div class="buttons is-centered">
+            <button id="recording-btn" class="button is-outlined is-primary ">Start</button>
+        </div >
+    </section>
+
+    <section class="section columns is-multiline is-centered">
+        <div class="column is-one-third">
+            <div class="card">
+                <header class="card-header has-background-info-light">
+                    <h3 class="card-header-title is-centered">
+                        <strong class="has-text-info-dark">
+                            Accelerometer data
+                        </strong>
+                    </h3>
+                </header>
+                <div class="card-content">
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Acc X:</p>
+                        <p class="level-right has-text-info-dark"> 123.231</p>
+                    </div>
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Acc Y:</p>
+                        <p class="level-right has-text-info-dark"> 123123.231</p>
+                    </div>
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Acc Z:</p>
+                        <p class="level-right has-text-info-dark"> 1.231</p>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="is-half column">
-            <div class="notification is-primary">
-                <strong>Accelerometer data:</strong> X: <code>{{ accX }}</code>, Y: <code>{{ accY }}</code> , Z:
-                <code>{{ accZ }}</code>
+
+        <div class="column is-one-third">
+            <div class="card">
+                <header class="card-header has-background-info-light">
+                    <h3 class="card-header-title is-centered">
+                        <strong class="has-text-info-dark">
+                            Gyroscope data
+                        </strong>
+                    </h3>
+                </header>
+                <div class="card-content">
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Gyr X:</p>
+                        <p class="level-right has-text-info-dark"> 123.231</p>
+                    </div>
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Gyr Y:</p>
+                        <p class="level-right has-text-info-dark"> 123123.231</p>
+                    </div>
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Gyr Z:</p>
+                        <p class="level-right has-text-info-dark"> 1.231</p>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+
+        <div class="column is-one-third">
+            <div class="card">
+                <header class="card-header has-background-info-light">
+                    <h3 class="card-header-title is-centered">
+                        <strong class="has-text-info-dark">
+                            Magnetometer data
+                        </strong>
+                    </h3>
+                </header>
+                <div class="card-content">
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Mag X:</p>
+                        <p class="level-right has-text-info-dark"> 123.231</p>
+                    </div>
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Mag Y:</p>
+                        <p class="level-right has-text-info-dark"> 123123.231</p>
+                    </div>
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Mag Z:</p>
+                        <p class="level-right has-text-info-dark"> 1.231</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="column is-one-third">
+            <div class="card">
+                <header class="card-header has-background-info-light">
+                    <h3 class="card-header-title is-centered">
+                        <strong class="has-text-info-dark">
+                            GPS data
+                        </strong>
+                    </h3>
+                </header>
+                <div class="card-content">
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Latitude:</p>
+                        <p class="level-right has-text-info-dark"> 123.231</p>
+                    </div>
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Longitude:</p>
+                        <p class="level-right has-text-info-dark"> 123123.231</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="column is-one-third">
+            <div class="card">
+                <header class="card-header has-background-info-light">
+                    <h3 class="card-header-title is-centered">
+                        <strong class="has-text-info-dark">
+                            OBD-II data
+                        </strong>
+                    </h3>
+                </header>
+                <div class="card-content">
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Data 1:</p>
+                        <p class="level-right has-text-info-dark"> 123.231</p>
+                    </div>
+                    <div class="level is-mobile">
+                        <p class="level-left tag is-success is-light">Data 2:</p>
+                        <p class="level-right has-text-info-dark"> 123123.231</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="../static/js/app.js"></script>
 </body>
 
 </html>
