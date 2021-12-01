@@ -18,13 +18,3 @@ CREATE TABLE IF NOT EXISTS vehicledata (
 	breakPosition NUMBER,
 	eventClass BOOLEAN
 );
-
-CREATE TABLE IF NOT EXISTS gpsTempData (
-	id INTEGER PRIMARY KEY,
-	latitude NUMBER,
-	longitude NUMBER
-);
-
-INSERT INTO gpsTempData (id, latitude, longitude) VALUES(0,0,0) 
-ON CONFLICT(id) DO 
-UPDATE SET id=0, latitude=0, longitude=0;
