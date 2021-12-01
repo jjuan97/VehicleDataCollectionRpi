@@ -1,10 +1,12 @@
 <!DOCTYPE html>
+<html lang="en"></html>
 <html>
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ title }}!</title>
+    <script src="../static/js/socket.io.min.js"></script>
     <link rel="stylesheet" href="../static/styles/css/bulma.min.css">
 </head>
 
@@ -41,16 +43,16 @@
             <div class="field column">
                 <label class="label">Frequency (Hz):</label>
                 <div class="control">
-                  <input class="input" type="number" placeholder="e.g. 20">
+                  <input class="input" type="number" placeholder="e.g. 20" data-error-msg="freq-error-msg">
+                  <p class="help is-danger is-hidden" id="freq-error-msg">Enter a valid frequency and Greater than zero</p>
                 </div>
-                <p class="help is-danger is-hidden">Enter a valid frequency and Greater than zero</p>
             </div>
             <div class="field column">
                 <label class="label">ID Vehicle:</label>
                 <div class="control">
-                    <input class="input" type="text" placeholder="e.g. Renault sandero - Juan">
+                    <input class="input" type="text" placeholder="e.g. Renault sandero - Juan" data-error-msg="vehicle-error-msg">
                 </div>
-                <p class="help is-danger is-hidden">Enter a id for this vehicle</p>
+                <p class="help is-danger is-hidden" id="vehicle-error-msg">Enter a id for this vehicle</p>
             </div>
 
         </div>
@@ -185,6 +187,7 @@
     </section>
 
     <script src="../static/js/app.js"></script>
+    <script src="../static/js/ws.js"></script>
 </body>
 
 </html>

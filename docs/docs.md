@@ -25,6 +25,7 @@ La documentación usada para lograr el correcto funcionamiento es la siguiente:
 # Flask WebServer
 
 - Guide to config flask: https://towardsdatascience.com/python-webserver-with-flask-and-raspberry-pi-398423cc6f5d
+- https://flask-socketio.readthedocs.io/en/latest/
 - 
 
 # APT packages installed
@@ -74,3 +75,5 @@ tzlocal                          4.1
 urllib3                          1.26.7
 Werkzeug                         2.0.2
 zipp                             3.6.0
+flask-socketio                   5.1.1
+eventlet                         0.33.0
