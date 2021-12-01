@@ -11,31 +11,28 @@ import time
 eventlet.monkey_patch(thread=True, time=True)
 app = Flask(__name__)
 socketio = SocketIO(app)
-recording = False
-scheduler = BackgroundScheduler(timezone="America/Bogota", job_defaults={'max_instances': 2})
-firstRecording = True
 
-gpsData = [0, 0]
+scheduler = BackgroundScheduler(timezone="America/Bogota", job_defaults={'max_instances': 2})
+recording = False
+firstRecording = True
+tempState = [0, 0, True]
 data = {"accX": 12.34, "accY": 12.12, "lat": 0, "lng": 0}
 
 
-def modifyData (gpsData):
-    while True:
+def modifyData (tempState):
+    while tempState[2]:
         i = random.randrange(10)
-        #print(i)
-        gpsData[0] = i
-        gpsData[1] = i
-        time.sleep(0.2)
-    
+        print('Recording: {}, i={}'.format(tempState[2], i))
+        if (i%2 == 0):
+            tempState[0] = i
+            tempState[1] = i
+        time.sleep(0.1)
 
-def sendingData (data, gpsData):
-    #print(gpsData)
-    data['lat'] = gpsData[0]
-    data["lng"] = gpsData[1]
+def sendingData (data, tempState):
+    print(tempState)
+    data['lat'] = tempState[0]
+    data["lng"] = tempState[1]
     socketio.emit('vehicleData', json.dumps(data))
-
-#scheduler.add_job(sendingData, args=[data, gpsData], trigger='interval', seconds=1, id="send_data")
-#scheduler.add_job(modifyData, args=[gpsData], trigger='date', id="modify_data")
 
 @app.route('/')
 def index():
@@ -54,21 +51,22 @@ def index():
 
 
 @app.route('/recordingTask', methods=['POST'])
-def handleRecordingTask():  
-
+def handleRecordingTask():
+    global recording
     # TODO: start savingTask
     request_data = request.get_json()
     recording = request_data['recording']
+    tempState[2] = recording
     idVehicle = request_data['idVehicle']
     freq = request_data['freq']
 
     response = 'Rpi is now {}'.format('recording' if (recording) else 'stopped')
 
     if(recording):
-        #scheduler.add_job(sendingData, 'interval', seconds=1, id="send_data")
         global firstRecording, scheduler
-        scheduler.add_job(sendingData, args=[data, gpsData], trigger='interval', seconds=1)
-        scheduler.add_job(modifyData, args=[gpsData], trigger='date', id='2')
+
+        scheduler.add_job(sendingData, args=[data, tempState], trigger='interval', seconds=1, id="send_data")
+        scheduler.add_job(modifyData, args=[tempState], trigger='date', id="modify_data")
         if (firstRecording):
             scheduler.start()
             firstRecording = False;
@@ -76,9 +74,7 @@ def handleRecordingTask():
             scheduler.resume()
     else:
         scheduler.pause()
-        scheduler.pause_job('2')
         scheduler.remove_all_jobs()
-        #scheduler.reschedule_job('send_data', trigger='interval', seconds=1)
 
     socketio.emit('vehicleData', json.dumps({"response": response}))
     return {"response": response}
