@@ -1,11 +1,13 @@
 import sqlite3
 import time
+from datetime import date
 from imu import mpu6050
 from gps import gps_module
 from apscheduler.schedulers.background import BackgroundScheduler
 
+scheduler = BackgroundScheduler(timezone="America/Bogota", job_defaults={'max_instances': 2})
 db = './database/vehicledatabase.db'
-gps_data = [0, 0]
+temp_data = [0, 0, True]
 
 def create_connection():
 	"""Database connection
@@ -29,15 +31,31 @@ def create_database():
 	cursor.close()
 	db_connection.close()
 	
-def reading_gps_data(gps_data):
+@scheduler.scheduled_job('date', id="reading", args=[temp_data])
+def reading_gps_data(temp_data):
+	"""Read GPS Data
+	Function to read GPS data from gps_module,
+	the data from GPS latitude and longitude
+	is saved in temp_data[0] and temp_data[1]
 	
-	while True:
+	Keyword arguments:
+    temp_data -- List with this variables [latitude, longitude, conditional]
+	"""
+	while temp_data[2]:
 		latitude, longitude = gps_module.readGPSPosition()
-		gps_data[0] = latitude
-		gps_data[1] = longitude
-		#print(gps_data)
+		temp_data[0] = latitude
+		temp_data[1] = longitude
+		print(temp_data)
 
-def saving_task(gps_data):
+@scheduler.scheduled_job('interval', seconds=0.050, id="saving", args=[temp_data])
+def saving_task(temp_data):
+	"""Save all captured data
+	This function captured and save data from all modules
+	(IMU, GPS, OBD-II), the data is saved into database
+	
+	Keyword arguments:
+    temp_data -- List with this variables [latitude, longitude, conditional]
+    """
 	# Create connection
 	db_connection = create_connection()
 	cursor = db_connection.cursor()
@@ -49,32 +67,35 @@ def saving_task(gps_data):
 	magX, magY, magZ = 0, 0, 0 #kinematic_data[2]
 	
 	# Load GPS data
-	latitude, longitude = gps_data
-	#print(latitude, longitude)
+	latitude, longitude, cond = temp_data
 	
 	# Insert data into database
-	data = [100, 'unVehiculo', time.time(), 
-		accX, accY, accZ, 
-		velAngX, velAngY, velAngZ,
-		magX, magY, magZ,
-		latitude, longitude]
-	print("Saving data at: ", time.strftime('%Y-%m-%d %H:%M:%S',time.gmtime(time.time())))
-	cursor.execute('''INSERT INTO vehicledata (
-			idTrip,
-			idVehicle,
-			timestamp,
-			accX,
-			accY,
-			accZ,
-			velAngX,
-			velAngY,
-			velAngZ,
-			magX,
-			magY,
-			magZ,
-			latitude,
-			longitude)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', data)
+	data = [100, str(cond), time.time(), 
+			accX, accY, accZ, 
+			velAngX, velAngY, velAngZ,
+			magX, magY, magZ,
+			latitude, longitude
+			]
+	#print("Saving data at: ", time.strftime('%Y-%m-%d %H:%M:%S',time.gmtime(time.time())))
+	query = '''INSERT INTO vehicledata 
+			(
+				idTrip,
+				idVehicle,
+				timestamp,
+				accX,
+				accY,
+				accZ,
+				velAngX,
+				velAngY,
+				velAngZ,
+				magX,
+				magY,
+				magZ,
+				latitude,
+				longitude
+			)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+	cursor.execute(query, data)
 	db_connection.commit()
 	cursor.close()
 	db_connection.close()
@@ -89,16 +110,27 @@ if __name__ == "__main__":
 	try:
 		# This is here to simulate application activity (which keeps the main thread alive).
 		main()
-		scheduler = BackgroundScheduler(timezone="America/Bogota", job_defaults={'max_instances': 2})
-		scheduler.add_job(reading_gps_data, args=[gps_data], id="reading")
-		scheduler.add_job(saving_task, 'interval', args=[gps_data], seconds=0.050, id="saving")
+		
+		print("Start")
 		scheduler.start()
-		for i in range(10):
-			time.sleep(2)
-		scheduler.shutdown()
+		time.sleep(5)
+		
+		print("Pause")
+		temp_data[2] = False
+		scheduler.pause()
+		#scheduler.remove_all_jobs()
+		time.sleep(5)
+		
+		print("Start again")
+		temp_data[2] = True
+		scheduler.resume()
+		time.sleep(5)
+		
+		print("Shutdown")
+		scheduler.shutdown(wait=False)
 		while True:
 			print("FINISHED")
 			time.sleep(2)
 	except (KeyboardInterrupt, SystemExit):
 		# Not strictly necessary if daemonic mode is enabled but should be done if possible
-		scheduler.shutdown()
+		scheduler.shutdown(wait=False)
