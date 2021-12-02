@@ -1,53 +1,82 @@
 import sqlite3
 import time
+from imu import mpu6050
 from apscheduler.schedulers.background import BackgroundScheduler
 
-try:
-  db_connection = sqlite3.connect('vehicledatabase.db')
-  cursor = db_connection.cursor()
-  cursor.execute('''CREATE TABLE IF NOT EXISTS vehicledata (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		idTrip INTEGER,
-		idVehicle TEXT,
-		timestamp DATETIME,
-		speed NUMBER,
-		accX NUMBER,
-		accY NUMBER,
-		accZ NUMBER,
-		velAngX NUMBER,
-		velAngY NUMBER,
-		velAngZ NUMBER,
-		magX NUMBER,
-		magY NUMBER,
-		magZ NUMBER,
-		latitude NUMBER,
-		longitude NUMBER,
-		breakPosition NUMBER,
-		eventClass BOOLEAN)''')
-  cursor.close()
-  db_connection.close()
-except Error as e:
-    print(e)
+db = './database/vehicledatabase.db'
 
-def slowTask():
-  db_connection = sqlite3.connect('vehicledatabase.db')
+def create_connection():
+  """Database connection
+  """
+  try:
+    conn = sqlite3.connect(db)
+  except Error as e:
+    print(e)
+  return conn
+  
+def create_database():
+  """Database creation
+  """
+  with open('./database/configDB.sql', 'r') as sql_file:
+    sql_script = sql_file.read()
+
+  db_connection = create_connection()
   cursor = db_connection.cursor()
-  data = [100, 'unVehiculo', 0.1, 0.2, time.time() ]
-  print("Saving data at ", time.time())
-  cursor.execute('''INSERT INTO vehicledata (
-		idTrip,
-		idVehicle,
-		latitude,
-		longitude,
-		timestamp) 
-		VALUES (?, ?, ?, ?, ?)''', data)
+  cursor.executescript(sql_script)
   db_connection.commit()
   cursor.close()
   db_connection.close()
 
-scheduler = BackgroundScheduler(timezone="America/Bogota", job_defaults={'max_instances': 2})
-scheduler.add_job(slowTask, 'interval', seconds=0.050)
-scheduler.start()
+def slowTask():
+  # Create connection
+  db_connection = create_connection()
+  cursor = db_connection.cursor()
+  
+  # Load Kinematic data
+  kinematic_data = mpu6050.read_data()
+  accX, accY, accZ = kinematic_data[0]
+  velAngX, velAngY, velAngZ = kinematic_data[1]
+  magX, magY, magZ = 0, 0, 0 #kinematic_data[2]
+  
+  # Load GPS data
+  cursor.execute('''SELECT latitude, longitude FROM gpsTempData''')
+  latitude, longitude = cursor.fetchone()
+  
+  # Insert data into database
+  data = [100, 'unVehiculo', time.time(), 
+	  accX, accY, accZ, 
+	  velAngX, velAngY, velAngZ,
+	  magX, magY, magZ,
+	  latitude, longitude]
+  print("Saving data at ", time.time())
+  cursor.execute('''INSERT INTO vehicledata (
+		idTrip,
+		idVehicle,
+		timestamp,
+		accX,
+		accY,
+		accZ,
+		velAngX,
+		velAngY,
+		velAngZ,
+		magX,
+		magY,
+		magZ,
+		latitude,
+		longitude)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', data)
+  db_connection.commit()
+  cursor.close()
+  db_connection.close()
+
+def main():
+  create_database()
+  
+  scheduler = BackgroundScheduler(timezone="America/Bogota", job_defaults={'max_instances': 2})
+  scheduler.add_job(slowTask, 'interval', seconds=0.050)
+  scheduler.start()
+
+main()
 
 try:
   # This is here to simulate application activity (which keeps the main thread alive).
