@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+</html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="../static/styles/css/bulma.min.css">
+</head>
+
+<body>
+    <nav class="navbar is-light" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a id="navbar-btn" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false"
+                data-target="navbar">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+        <div id="navbar" class="navbar-menu mb-1">
+            <div class="navbar-start">
+                <a class="navbar-item" href="/">
+                    Home
+                </a>
+                <a class="navbar-item" href="/trips">
+                    Trip history
+                </a>
+            </div>
+    </nav>
+
+    <section class="hero is-primary is-small block">
+        <div class="hero-body">
+            <p class="title">
+                Trip History
+            </p>
+        </div>
+    </section>
+
+    <section class="section py-0">
+        <div class="card table-container is-centered table-background-color">
+            <table class="table is-hoverable is-fullwidth">
+                <thead>
+                    <tr class="has-background-info-light">
+                        <th class="has-text-info-dark">Trip Id</th>
+                        <th class="has-text-info-dark">Trip Time</th>
+                        <th class="has-text-info-dark">Vehicle Id</th>
+                        <th class="has-text-info-dark"><abbr title="Captured Data">Cap. Data</abbr></th>
+                        <th class="has-text-info-dark"><abbr title="Near-Crash Kinematic Data">Near-Crash Data</abbr></th>
+                        <th class="has-text-info-dark"><abbr title="Mean Frequency">Mean f</abbr></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                    <tr>
+                        <th>{{row.idTrip}}</th>
+                        <td>{{row.time}}</td>
+                        <td>{{row.idVehicle}}</td>
+                        <td>{{row.capturedData}}</td>
+                        <td>{{row.nearcrashesData}}</td>
+                        <td>{{row.meanFrequency}}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <th>-</th>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    {% endfor %}
+                    <!--<tr class="is-selected">
+                    <th>2</th>
+                    <td>1-Dec-2021 21:50</td>
+                    <td>Renaul-Juan</td>
+                    <td>203</td>
+                    <td>35</td>
+                    <td>20.8</td>
+                  </tr>-->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <script src="../static/js/app.js"></script>
+</body>
+
+</html>
