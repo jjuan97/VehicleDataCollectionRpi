@@ -42,21 +42,22 @@
 
     <section class="section py-0">
         <div class="card table-container is-centered table-background-color">
-            <table class="table is-hoverable is-fullwidth">
+            <table id="table" class="table is-hoverable is-fullwidth">
                 <thead>
                     <tr class="has-background-info-light">
                         <th class="has-text-info-dark">Trip Id</th>
                         <th class="has-text-info-dark">Trip Time</th>
                         <th class="has-text-info-dark">Vehicle Id</th>
                         <th class="has-text-info-dark"><abbr title="Captured Data">Cap. Data</abbr></th>
-                        <th class="has-text-info-dark"><abbr title="Near-Crash Kinematic Data">Near-Crash Data</abbr></th>
+                        <th class="has-text-info-dark"><abbr title="Near-Crash Kinematic Data">Near-Crash Data</abbr>
+                        </th>
                         <th class="has-text-info-dark"><abbr title="Mean Frequency">Mean f</abbr></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in data %}
                     <tr>
-                        <th>{{row.idTrip}}</th>
+                        <th >{{row.idTrip}}</th>
                         <td>{{row.time}}</td>
                         <td>{{row.idVehicle}}</td>
                         <td>{{row.capturedData}}</td>
@@ -73,20 +74,39 @@
                         <td>-</td>
                     </tr>
                     {% endfor %}
-                    <!--<tr class="is-selected">
-                    <th>2</th>
-                    <td>1-Dec-2021 21:50</td>
-                    <td>Renaul-Juan</td>
-                    <td>203</td>
-                    <td>35</td>
-                    <td>20.8</td>
-                  </tr>-->
                 </tbody>
             </table>
         </div>
     </section>
 
-    <script src="../static/js/app.js"></script>
+    <div id="modal" class="modal"> <!--is-active-->
+        <div class="modal-background"></div>
+        <div class="modal-content">
+            <!-- Any other Bulma elements you want -->
+            <div class="card">
+                <div class="card-content">
+                    <h4 class="title is-4">Send data for the trip:</h4>
+                    <div class="content">
+                        <div class="box">
+                            <p class="is-size-6">Trip id: <b id="trip-id">1</b></p>
+                            <p class="is-size-6">Trip time: <b id="trip-time">1</b></p>
+                        </div>
+                        <div class="columns is-mobile is-centered">
+                            <div class="column is-narrow">
+                                <button id="cancel" class="button is-outlined is-danger">Cancel</button>
+                            </div>
+                            <div class="column is-narrow">
+                                <button id="send" class="button is-outlined is-primary">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="modal-close is-large" aria-label="close"></button>
+    </div>
+
+    <script src="../static/js/trips.js"></script>
 </body>
 
 </html>

@@ -5,7 +5,7 @@ const inputs = document.querySelectorAll('input');
 
 let recording = false;
 let badInputs = false;
-let body = {}
+let body = {};
 
 const validations = {
 	'number': (value) => {
@@ -28,7 +28,7 @@ const validations = {
 
 function handleBurgermenu (e) {
 	navbarMenu.classList.toggle('is-active');
-	navbarBtn.classList.toggle('is-active')
+	navbarBtn.classList.toggle('is-active');
 }
 
 function validateInputs(){
