@@ -1,11 +1,13 @@
 import pynmea2
 import serial
 import time
+from multiprocessing import Process
 
-ser = serial.Serial('/dev/ttyAMA0', 9600, timeout=5.0)
-ser.timeout = 0.01
+ser = serial.Serial('/dev/ttyAMA0', 9600, timeout=0.02)
 FREQ5HZ = b'\xB5\x62\x06\x08\x06\x00\xC8\x00\x01\x00\x01\x00\xDE\x6A'
 FREQ1HZ = b'\xB5\x62\x06\x08\x06\x00\xE8\x03\x01\x00\x01\x00\x01\x39'
+latitude = 1.0
+longitude = 1.0
 
 def configGPSRate(freq):
 	if (freq == 5):
@@ -29,6 +31,17 @@ def readGPSPosition2():
 		time.sleep(0.1)
 	newmsg=pynmea2.parse(line)
 	return newmsg.latitude, newmsg.longitude
+			
+def read_GPS_position3():	
+	msg_type = ''.join(map(chr, ser.read(6)))
+	if (msg_type != "$GPRMC"):
+		ser.readline()
+		return -1, -1
+	else:
+		msg = msg_type + ''.join( map(chr, ser.readline()) )		
+		newmsg = pynmea2.parse(msg)
+		#print('{} - lat: {}, lng:{}'.format(time.strftime('%H:%M:%S',time.gmtime(time.time())), newmsg.latitude, newmsg.longitude) )
+		return newmsg.latitude, newmsg.longitude
 
 def print_data(num: int = 10):
 	"""Print GPS data
