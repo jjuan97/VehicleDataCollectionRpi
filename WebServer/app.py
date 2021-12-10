@@ -2,6 +2,7 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 from apscheduler.schedulers.background import BackgroundScheduler
 from multiprocessing import Process, Value, Array, Lock
+from ctypes import c_char_p
 
 import sqlite3
 import eventlet
@@ -17,15 +18,20 @@ from gps import gps_module
 eventlet.monkey_patch(thread=True, time=True)
 app = Flask(__name__)
 socketio = SocketIO(app)
-scheduler = BackgroundScheduler(timezone="America/Bogota", job_defaults={'max_instances': 2})
+scheduler = BackgroundScheduler(timezone="America/Bogota", job_defaults={'max_instances': 4})
 
 db = './database/vehicledatabase.db'
 recording = False
 firstRecording = True
-recording_shared = Value('i', 0)
-pos_s = Array('d', [1.0, 1.0])
-position = [1.0, 1.0]
+lat = Value('d', 1.0)
+lng = Value('d', 1.0)
+count = Value('i', 0)
+id_vehicle = Array('u', list('defaultID'))
+period = Value('d', 20)
 lock = Lock()
+
+connection_db = None
+cursor_db = None
 
 data_to_show = { "accX": 0, "accY": 0, "accZ": 0,
 	"velAngX": 0, "velAngY": 0, "velAngZ": 0,
@@ -54,30 +60,18 @@ def create_database():
 	db_connection.commit()
 	cursor.close()
 	db_connection.close()
-	
-
-def reading_gps_data (latitudeS, longitudeS, recordingS):
-	while True:
-		if (recordingS.value == 1):
-			latitude, longitude = gps_module.readGPSPosition2()
-			latitudeS.value = latitude
-			longitudeS.value = longitude
-			#print('lat: {} - lng: {}'.format(latitude,longitude))
-		time.sleep(0.1)
 		
-def reading_gps_data2 (pos_s, l):
-	while True:
-		#l.acquire()
-		latitude, longitude = gps_module.read_GPS_position3()
+def reading_gps_data (lat, lng):
+	while True:		
+		latitude, longitude = gps_module.read_GPS_position_2()
 		if (latitude != -1):
-			pos_s[0] = latitude
-			pos_s[1] = longitude
-			time.sleep(0.1)
-		#print('lat: {} - lng: {}'.format(latitude,longitude))
-		#l.release()
+			lat.value = latitude
+			lng.value = longitude
+			print('lat: {} - lng: {}'.format(lat.value, lng.value))
+		time.sleep(0.1)	
 
 
-def saving_task (pos_s, l):
+def saving_task (lat, lng, conn, cursor, count, l, id_vehicle):
 	"""Save all captured data
 	This function captured and save data from all modules
 	(IMU, GPS, OBD-II), the data is saved into database
@@ -86,11 +80,6 @@ def saving_task (pos_s, l):
 	temp_data -- List with this variables [latitude, longitude, conditional]
 	"""
 	l.acquire()
-	# Create connection	
-	db = './database/vehicledatabase.db'
-	db_connection = create_connection()
-	cursor = db_connection.cursor()
-	
 	# Load Kinematic data
 	kinematic_data = mpu6050.read_data()
 	accX, accY, accZ = kinematic_data[0]
@@ -98,18 +87,18 @@ def saving_task (pos_s, l):
 	magX, magY, magZ = 0, 0, 0 #kinematic_data[2]
 	
 	# Load GPS data
-	# latitude, longitude, cond = temp_data
-	latitude, longitude = pos_s
-	#print(latitude)
+	# position_shared contains latitude and longitude
+	lat.value = lat.value*1
+	lng.value = lng.value*1
 	
 	# Insert data into database	
-	data = [100, 'idV', time.time(), 
+	data = [100, "".join(id_vehicle.value), time.time(), 
 			accX, accY, accZ, 
 			velAngX, velAngY, velAngZ,
 			magX, magY, magZ,
-			latitude, longitude
+			lat.value, lng.value
 			]
-	print("Saving data at: ", time.strftime('%Y-%m-%d %H:%M:%S',time.gmtime(time.time())))
+	print("Saving data at: ", time.strftime('%H:%M:%S',time.gmtime(time.time())))
 	
 	query = '''INSERT INTO vehicledata
 			(
@@ -131,26 +120,29 @@ def saving_task (pos_s, l):
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
 	
 	cursor.execute(query, data)
-	db_connection.commit()
-	cursor.close()
-	db_connection.close()
+	if (count.value == 10):
+		#print(count.value)
+		print('lat: {} - lng: {}'.format(lat.value, lng.value))
+		count.value = 0
+		data_to_show["accX"]= accX
+		data_to_show["accY"]= accY
+		data_to_show["accZ"]= accZ
+		data_to_show["velAngX"]= velAngX
+		data_to_show["velAngY"]= velAngY
+		data_to_show["velAngZ"]= velAngZ
+		data_to_show["magX"]= 0
+		data_to_show["magY"]= 0
+		data_to_show["magZ"]= 0
+		data_to_show["lat"]= lat.value
+		data_to_show["lng"]= lng.value
+		send_data(data_to_show)				
+		
+	count.value = count.value + 1
 	l.release()
 	
-	data_to_show["accX"]= accX
-	data_to_show["accY"]= accY
-	data_to_show["accZ"]= accZ
-	data_to_show["velAngX"]= velAngX
-	data_to_show["velAngY"]= velAngY
-	data_to_show["velAngZ"]= velAngZ
-	data_to_show["magX"]= 0
-	data_to_show["magY"]= 0
-	data_to_show["magZ"]= 0
-	data_to_show["lat"]= latitude
-	data_to_show["lng"]= longitude
-	
 
-'''def send_data(data_to_show):
-	socketio.emit('vehicleData', json.dumps(data_to_show))'''
+def send_data(data_to_show):
+	socketio.emit('vehicleData', json.dumps(data_to_show))
     
 
 @app.route('/')
@@ -165,21 +157,24 @@ def index():
 
 @app.route('/recordingTask', methods=['POST'])
 def handleRecordingTask():
-	global recording, pos_s, lock
+	global recording, lat, lng, connection_db, cursor_db, count, lock, id_vehicle, period
 	request_data = request.get_json()
 	recording = request_data['recording']
-	recording_shared.value = 1 if (recording) else 0
-	idVehicle = request_data['idVehicle']
-	freq = request_data['freq']
+	id_vehicle.value = list(request_data['idVehicle'])
+	period.value = 1/int(request_data['freq'])
 
 	response = 'Rpi is now {}'.format('recording' if (recording) else 'stopped')
-	print(pos_s)
 
 	if(recording):
 		global firstRecording, scheduler
 		
-		scheduler.add_job(saving_task, args=[pos_s, lock], trigger='interval', seconds=0.05, id="saving_task")
-		#scheduler.add_job(reading_gps_data, args=[temp_data], trigger='date', id="read_gps_data")
+		connection_db = create_connection()
+		cursor_db = connection_db.cursor()
+		
+		scheduler.add_job(saving_task, 
+			args=[lat,lng,connection_db,cursor_db,count,lock,id_vehicle],
+			trigger='interval', seconds=period.value, id="saving_task")
+		
 		if (firstRecording):
 			scheduler.start()
 			firstRecording = False
@@ -188,6 +183,9 @@ def handleRecordingTask():
 	else:
 		scheduler.pause()
 		scheduler.remove_all_jobs()
+		connection_db.commit()
+		cursor_db.close()
+		connection_db.close()
 	
 	socketio.emit('vehicleDataConnect', json.dumps({"response": response}))
 	return {"response": response}
@@ -201,9 +199,8 @@ def handle_connection(data):
 
 if __name__ == '__main__':
 	create_database()
-	#threading.Thread(target=reading_gps_data, args=(temp_data,), daemon=True).start()
 	
-	p = Process(target=reading_gps_data2, args=(pos_s, lock,), daemon=True)
+	p = Process(target=reading_gps_data, args=(lat,lng,), daemon=True)
 	p.start()
     
 	socketio.run(app, debug=True, port=8080, host='0.0.0.0')

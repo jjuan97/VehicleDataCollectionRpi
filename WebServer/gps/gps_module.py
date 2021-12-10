@@ -3,11 +3,9 @@ import serial
 import time
 from multiprocessing import Process
 
-ser = serial.Serial('/dev/ttyAMA0', 9600, timeout=0.02)
+ser = serial.Serial('/dev/ttyAMA0', 9600, timeout=5)
 FREQ5HZ = b'\xB5\x62\x06\x08\x06\x00\xC8\x00\x01\x00\x01\x00\xDE\x6A'
 FREQ1HZ = b'\xB5\x62\x06\x08\x06\x00\xE8\x03\x01\x00\x01\x00\x01\x39'
-latitude = 1.0
-longitude = 1.0
 
 def configGPSRate(freq):
 	if (freq == 5):
@@ -17,22 +15,14 @@ def configGPSRate(freq):
 		ser.write(FREQ1HZ)
 		return ser.readline()
 
-def readGPSPosition():	
+def read_GPS_position():
 	line = ''.join(map(chr, ser.readline()))
 	while (line[0:6] != "$GPRMC"):
 		line = ''.join(map(chr, ser.readline()))
-	newmsg=pynmea2.parse(line)
-	return newmsg.latitude, newmsg.longitude
-	
-def readGPSPosition2():	
-	line = ''.join(map(chr, ser.readline()))
-	while (line[0:6] != "$GPRMC"):
-		line = ''.join(map(chr, ser.readline()))
-		time.sleep(0.1)
 	newmsg=pynmea2.parse(line)
 	return newmsg.latitude, newmsg.longitude
 			
-def read_GPS_position3():	
+def read_GPS_position_2():	
 	msg_type = ''.join(map(chr, ser.read(6)))
 	if (msg_type != "$GPRMC"):
 		ser.readline()
@@ -55,7 +45,7 @@ def print_data(num: int = 10):
 	data_count = 0
 	for i in range(0, num):
 		try:
-			lat, lng = readGPSPosition()
+			lat, lng = read_GPS_position()
 			gps = "Latitude=" + str(lat) + " and Longitude=" + str(lng)
 			data_count += 1
 			print("ID: {0} DATA: {1}".format(data_count, gps))
