@@ -88,15 +88,16 @@
                     <h4 class="title is-4">Send data for the trip:</h4>
                     <div class="content">
                         <div class="box">
-                            <p class="is-size-6">Trip id: <b id="trip-id">1</b></p>
-                            <p class="is-size-6">Trip time: <b id="trip-time">1</b></p>
+                            <p class="is-size-6">Trip id: <b id="trip-id"></b></p>
+                            <p class="is-size-6">Trip time: <b id="trip-time"></b></p>
+                            <p class="is-size-6">Vehicle id: <b id="vehicle-id"></b></p>
                         </div>
                         <div class="columns is-mobile is-centered">
                             <div class="column is-narrow">
-                                <button id="cancel" class="button is-outlined is-danger">Cancel</button>
+                                <button type="delete-data" id="delete" class="button is-danger is-primary">Delete</button>
                             </div>
                             <div class="column is-narrow">
-                                <button id="send" class="button is-outlined is-primary">Send</button>
+                                <button type="send-data" id="send" class="button is-outlined is-primary">Send</button>
                             </div>
                         </div>
                     </div>

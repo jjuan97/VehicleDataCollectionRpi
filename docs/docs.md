@@ -26,7 +26,7 @@ La documentación usada para lograr el correcto funcionamiento es la siguiente:
 
 - Guide to config flask: https://towardsdatascience.com/python-webserver-with-flask-and-raspberry-pi-398423cc6f5d
 - https://flask-socketio.readthedocs.io/en/latest/
-- 
+- Firebase in flask web app https://firebase.google.com/docs/database/admin/start#python
 
 # APT packages installed
 
@@ -34,6 +34,9 @@ La documentación usada para lograr el correcto funcionamiento es la siguiente:
 - rpi.gpio-common
 
 # PIP Packages installed
+
+- firebase-admin
+
 Package                          Version
 -------------------------------- -----------
 Adafruit-Blinka                  6.15.0
