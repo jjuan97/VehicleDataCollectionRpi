@@ -145,21 +145,19 @@ def index():
     return render_template('index.html', **template_data)
 
 
-@app.route('/trips', methods=['GET', 'POST'])
+@app.route('/trips', methods=['GET', 'POST', 'DELETE'])
 def trips():
     if request.method == 'POST':
-        if request.json:
-            # If data is sended
-            request_data = request.get_json()
-            response = send_trip_data_firebase(request_data)
-            return {'result': response}
-        elif request.data:
-            # If delete button is presed
-            request_data = str(request.get_data(), 'utf-8')
-            response = delete_trip_data(request_data)
-            return {'result' : response}
-        else:
-            print("content type not especificated")
+        # If send button is presed
+        request_data = request.get_json()
+        response = send_trip_data_firebase(request_data)
+        return {'result': response}
+    
+    elif request.method == 'DELETE':
+        # If delete button is presed
+        request_data = str(request.get_data(), 'utf-8')
+        response = delete_trip_data(request_data)
+        return {'result' : response}
 
     else:
         query = """SELECT 
