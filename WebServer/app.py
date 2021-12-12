@@ -2,7 +2,6 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 from apscheduler.schedulers.background import BackgroundScheduler
 from multiprocessing import Process, Value, Array, Lock
-from ctypes import c_char_p
 
 import sqlite3
 import eventlet
@@ -10,7 +9,6 @@ import datetime
 import json
 import random
 import time
-import threading
 
 from imu import mpu6050
 from gps import gps_module
@@ -28,6 +26,7 @@ lng = Value('d', 1.0)
 count = Value('i', 0)
 id_vehicle = Array('u', list('defaultID'))
 period = Value('d', 20)
+time_elapsed = Value('d', 0)
 lock = Lock()
 
 connection_db = None
@@ -61,17 +60,22 @@ def create_database():
 	cursor.close()
 	db_connection.close()
 		
-def reading_gps_data (lat, lng):
-	while True:		
+def reading_gps_data (lat, lng, l):
+	while True:
+		latitude, longitude = gps_module.read_GPS_position()
+		lat.value = latitude
+		lng.value = longitude
+		#print('lat: {} - lng: {}'.format(lat.value, lng.value))
+		'''
 		latitude, longitude = gps_module.read_GPS_position_2()
 		if (latitude != -1):
 			lat.value = latitude
 			lng.value = longitude
-			print('lat: {} - lng: {}'.format(lat.value, lng.value))
+			print('lat: {} - lng: {}'.format(longitude, longitude))
 		time.sleep(0.1)	
+		'''
 
-
-def saving_task (lat, lng, conn, cursor, count, l, id_vehicle):
+def saving_task (lat, lng, conn, cursor, count, l, id_vehicle, t):
 	"""Save all captured data
 	This function captured and save data from all modules
 	(IMU, GPS, OBD-II), the data is saved into database
@@ -79,7 +83,7 @@ def saving_task (lat, lng, conn, cursor, count, l, id_vehicle):
 	Keyword arguments:
 	temp_data -- List with this variables [latitude, longitude, conditional]
 	"""
-	l.acquire()
+	#l.acquire()
 	# Load Kinematic data
 	kinematic_data = mpu6050.read_data()
 	accX, accY, accZ = kinematic_data[0]
@@ -87,9 +91,7 @@ def saving_task (lat, lng, conn, cursor, count, l, id_vehicle):
 	magX, magY, magZ = 0, 0, 0 #kinematic_data[2]
 	
 	# Load GPS data
-	# position_shared contains latitude and longitude
-	lat.value = lat.value*1
-	lng.value = lng.value*1
+	# lat and lng contains the position 
 	
 	# Insert data into database	
 	data = [100, "".join(id_vehicle.value), time.time(), 
@@ -120,10 +122,9 @@ def saving_task (lat, lng, conn, cursor, count, l, id_vehicle):
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
 	
 	cursor.execute(query, data)
-	if (count.value == 10):
-		#print(count.value)
+	
+	if ((time.time()-t.value) > 0.2 ):
 		print('lat: {} - lng: {}'.format(lat.value, lng.value))
-		count.value = 0
 		data_to_show["accX"]= accX
 		data_to_show["accY"]= accY
 		data_to_show["accZ"]= accZ
@@ -135,11 +136,11 @@ def saving_task (lat, lng, conn, cursor, count, l, id_vehicle):
 		data_to_show["magZ"]= 0
 		data_to_show["lat"]= lat.value
 		data_to_show["lng"]= lng.value
-		send_data(data_to_show)				
+		send_data(data_to_show)
+		t.value = time.time()
 		
-	count.value = count.value + 1
-	l.release()
-	
+	#l.release()
+
 
 def send_data(data_to_show):
 	socketio.emit('vehicleData', json.dumps(data_to_show))
@@ -157,7 +158,7 @@ def index():
 
 @app.route('/recordingTask', methods=['POST'])
 def handleRecordingTask():
-	global recording, lat, lng, connection_db, cursor_db, count, lock, id_vehicle, period
+	global recording, lat, lng, connection_db, cursor_db, count, lock, id_vehicle, period, time_elapsed
 	request_data = request.get_json()
 	recording = request_data['recording']
 	id_vehicle.value = list(request_data['idVehicle'])
@@ -171,8 +172,9 @@ def handleRecordingTask():
 		connection_db = create_connection()
 		cursor_db = connection_db.cursor()
 		
+		time_elapsed.value = time.time()
 		scheduler.add_job(saving_task, 
-			args=[lat,lng,connection_db,cursor_db,count,lock,id_vehicle],
+			args=[lat,lng,connection_db,cursor_db,count,lock,id_vehicle,time_elapsed],
 			trigger='interval', seconds=period.value, id="saving_task")
 		
 		if (firstRecording):
@@ -198,10 +200,11 @@ def handle_connection(data):
 
 
 if __name__ == '__main__':
-	create_database()
-	
-	p = Process(target=reading_gps_data, args=(lat,lng,), daemon=True)
-	p.start()
-    
-	socketio.run(app, debug=True, port=8080, host='0.0.0.0')
-	# app.run(debug=True, port=80, host='0.0.0.0')
+	try:
+		create_database()
+		p = Process(target=reading_gps_data, args=(lat,lng,lock))
+		p.start()
+		socketio.run(app, debug=True, port=8080, host='0.0.0.0')
+		# app.run(debug=True, port=80, host='0.0.0.0')
+	except KeyboardInterrupt:
+		p.close()
