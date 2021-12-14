@@ -1,2 +1,0 @@
-# This is un backup for before cmdline.txt config
-console=serial0,115200 console=tty1 root=/dev/mmcblk0p7 rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles

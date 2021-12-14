@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ title }}!</title>
+    <title>{{ title }}</title>
     <script src="../static/js/socket.io.min.js"></script>
     <link rel="stylesheet" href="../static/styles/css/bulma.min.css">
 </head>
@@ -21,10 +21,10 @@
         </div>
         <div id="navbar" class="navbar-menu mb-1">
           <div class="navbar-start">
-            <a class="navbar-item">
+            <a class="navbar-item" href="/">
               Home
             </a>
-            <a class="navbar-item">
+            <a class="navbar-item" href="/trips">
               Trip history
             </a>
           </div>
@@ -33,7 +33,7 @@
     <section class="hero is-primary is-small block">
         <div class="hero-body">
             <p class="title">
-                Vehicle Data captured from Raspberry
+                Vehicle Data Captured from Raspberry
             </p>
         </div>
     </section>
@@ -75,15 +75,15 @@
                 <div class="card-content" id="acc-data">
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Acc X:</p>
-                        <p class="level-right has-text-info-dark" data-key="accX"> 123.231</p>
+                        <p class="level-right has-text-info-dark" data-key="accX"> 0</p>
                     </div>
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Acc Y:</p>
-                        <p class="level-right has-text-info-dark" data-key="accY"> 123123.231</p>
+                        <p class="level-right has-text-info-dark" data-key="accY"> 0</p>
                     </div>
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Acc Z:</p>
-                        <p class="level-right has-text-info-dark" data-key="accZ"> 1.231</p>
+                        <p class="level-right has-text-info-dark" data-key="accZ"> 0</p>
                     </div>
                 </div>
             </div>
@@ -101,15 +101,15 @@
                 <div class="card-content" id="gyr-data">
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Gyr X:</p>
-                        <p class="level-right has-text-info-dark" data-key="velAngX"> 123.231</p>
+                        <p class="level-right has-text-info-dark" data-key="velAngX"> 0</p>
                     </div>
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Gyr Y:</p>
-                        <p class="level-right has-text-info-dark" data-key="velAngY"> 123123.231</p>
+                        <p class="level-right has-text-info-dark" data-key="velAngY"> 0</p>
                     </div>
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Gyr Z:</p>
-                        <p class="level-right has-text-info-dark" data-key="velAngZ"> 1.231</p>
+                        <p class="level-right has-text-info-dark" data-key="velAngZ"> 0</p>
                     </div>
                 </div>
             </div>
@@ -127,15 +127,15 @@
                 <div class="card-content" id="mag-data">
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Mag X:</p>
-                        <p class="level-right has-text-info-dark" data-key="magX"> 123.231</p>
+                        <p class="level-right has-text-info-dark" data-key="magX"> 0</p>
                     </div>
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Mag Y:</p>
-                        <p class="level-right has-text-info-dark" data-key="magY"> 123123.231</p>
+                        <p class="level-right has-text-info-dark" data-key="magY"> 0</p>
                     </div>
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Mag Z:</p>
-                        <p class="level-right has-text-info-dark" data-key="magZ"> 1.231</p>
+                        <p class="level-right has-text-info-dark" data-key="magZ"> 0</p>
                     </div>
                 </div>
             </div>
@@ -153,11 +153,11 @@
                 <div class="card-content" id="gps-data">
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Latitude:</p>
-                        <p class="level-right has-text-info-dark" data-key="lat"> 123.231</p>
+                        <p class="level-right has-text-info-dark" data-key="lat"> 0</p>
                     </div>
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Longitude:</p>
-                        <p class="level-right has-text-info-dark" data-key="lng"> 123123.231</p>
+                        <p class="level-right has-text-info-dark" data-key="lng"> 0</p>
                     </div>
                 </div>
             </div>
@@ -175,11 +175,11 @@
                 <div class="card-content" id="obd-data">
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Data 1:</p>
-                        <p class="level-right has-text-info-dark" data-key=""> 123.231</p>
+                        <p class="level-right has-text-info-dark" data-key=""> 0</p>
                     </div>
                     <div class="level is-mobile">
                         <p class="level-left tag is-success is-light">Data 2:</p>
-                        <p class="level-right has-text-info-dark" data-key="" > 123123.231</p>
+                        <p class="level-right has-text-info-dark" data-key="" > 0</p>
                     </div>
                 </div>
             </div>

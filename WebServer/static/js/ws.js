@@ -1,6 +1,5 @@
 window.addEventListener('load', ()=>{
   const moduleNames = ['acc-data', 'gyr-data', 'mag-data', 'gps-data'];
-  //const accData = document.getElementById('acc-data');
 
   const socket = io();
 
