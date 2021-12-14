@@ -26,6 +26,7 @@ firstRecording = True
 id_vehicle = Array('u', list('defaultID'))
 period = Value('d', 20)
 time_elapsed = Value('d', 0)
+trip_id = Value('i', -1)
 
 connection_db = None
 cursor_db = None
@@ -45,7 +46,7 @@ def create_connection():
 	"""Database connection
 	"""
 	try:
-		conn = sqlite3.connect(db, isolation_level=None)
+		conn = sqlite3.connect(db)
 	except Error as e:
 		print(e)
 	return conn
@@ -77,7 +78,7 @@ def reading_gps_data (writer):
 		#print('lat: {} - lng: {}'.format(latitude, longitude))
 
 
-def saving_task (conn, cursor, reader, id_vehicle, t):
+def saving_task (conn, cursor, reader, id_vehicle, t, trip_id):
 	
 	"""Save all captured data
 	This function captured and save data from all modules
@@ -102,7 +103,7 @@ def saving_task (conn, cursor, reader, id_vehicle, t):
 	print('lat: {} - lng: {}'.format(latitude, longitude))
 	
 	# Insert data into database	
-	data = [100, "".join(id_vehicle.value), time.time(), 
+	data = [trip_id.value, "".join(id_vehicle.value), time.time(), 
 			accX, accY, accZ, 
 			velAngX, velAngY, velAngZ,
 			magX, magY, magZ,
@@ -140,6 +141,14 @@ def saving_task (conn, cursor, reader, id_vehicle, t):
 
 def send_data(data_to_show):
 	socketio.emit('vehicleData', json.dumps(data_to_show))
+	
+def get_last_trip ():
+	cursor_db.execute("SELECT idTrip FROM vehicledata ORDER BY id DESC LIMIT 1")
+	results = cursor_db.fetchall()
+	last_trip = -1
+	for row in results:
+		last_trip = row[0]
+	return last_trip
     
 
 @app.route('/')
@@ -150,7 +159,6 @@ def index():
 		'title' : 'Vehicle data Recording'
 	}
 	return render_template('index.html', **templateData)
-
 
 @app.route('/recordingTask', methods=['POST'])
 def handleRecordingTask():
@@ -163,14 +171,16 @@ def handleRecordingTask():
 	response = 'Rpi is now {}'.format('recording' if (recording) else 'stopped')
 
 	if(recording):
-		global firstRecording, scheduler, reader
+		global firstRecording, scheduler, reader, trip_id
 		
 		connection_db = create_connection()
 		cursor_db = connection_db.cursor()
+		trip_id.value = int(get_last_trip()) + 1
 		
 		time_elapsed.value = time.time()
 		scheduler.add_job(saving_task, 
-			args=[connection_db, cursor_db, reader, id_vehicle, time_elapsed],
+			args=[connection_db, cursor_db, reader, id_vehicle,
+				time_elapsed, trip_id],
 			trigger='interval', seconds=period.value, id="saving_task")
 		
 		if (firstRecording):
