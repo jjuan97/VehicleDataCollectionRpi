@@ -16,6 +16,7 @@ import firebase_admin
 
 from imu import mpu6050
 from gps import gps_module
+from gpiozero import Button # Button to detect near-crash
 
 from firebase_admin import credentials
 from firebase_admin import db
@@ -55,6 +56,8 @@ data_to_show = { "accX": 0, "accY": 0, "accZ": 0,
 	"magX": 0, "magY": 0, "magZ": 0,
 	"lat": 0, "lng": 0
 	}
+	
+button = Button(17) # GPIO where button is connected
 
 
 def create_connection():
@@ -140,6 +143,15 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id):
 	velAngX, velAngY, velAngZ = kinematic_data[1]
 	magX, magY, magZ = 0, 0, 0 #kinematic_data[2]
 	
+	# Chek if near-crash button is pressed
+	
+	if button.is_pressed:
+		print("Button is pressed")
+		event_class = True
+	else:
+		print("Button is not pressed")
+		event_class = False
+	
 	# Load GPS data
 	latitude = 0
 	longitude = 0
@@ -153,7 +165,7 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id):
 			accX, accY, accZ, 
 			velAngX, velAngY, velAngZ,
 			magX, magY, magZ,
-			latitude, longitude
+			latitude, longitude, event_class
 			]
 	print("Saving data at: ", time.strftime('%H:%M:%S',time.gmtime(time.time())))
 	
@@ -163,9 +175,9 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id):
 				accX, accY,	accZ,
 				velAngX, velAngY, velAngZ,
 				magX, magY,	magZ,
-				latitude, longitude
+				latitude, longitude, eventClass
 			)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
 	
 	cursor.execute(query, data)
 	
@@ -230,6 +242,7 @@ def send_trip_data_firebase(data) -> bool:
 	status = False
 	try:
 		trip_data = dict((k, data[k]) for k in list(data.keys())[1:] if k in data)
+		trip_data["device"] = "Raspberry"
 		reference = ref.child('tripList').push(trip_data)
 		query = f"""SELECT * FROM vehicledata WHERE idTrip = {data['tripId']}"""
 		db_data = get_data(query)
