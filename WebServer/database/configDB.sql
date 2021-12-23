@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS vehicledata (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	idTrip INTEGER,
 	idVehicle TEXT,
-	timestamp DATETIME,
+	timestamp NUMBER,
 	speed NUMBER,
 	accX NUMBER,
 	accY NUMBER,
@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS vehicledata (
 	magZ NUMBER,
 	latitude NUMBER,
 	longitude NUMBER,
+	accPosition NUMBER,
 	breakPosition NUMBER,
 	eventClass BOOLEAN
 );

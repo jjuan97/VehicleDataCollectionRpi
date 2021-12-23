@@ -26,19 +26,16 @@ La documentación usada para lograr el correcto funcionamiento es la siguiente:
 
 - Guide to config flask: https://towardsdatascience.com/python-webserver-with-flask-and-raspberry-pi-398423cc6f5d
 - https://flask-socketio.readthedocs.io/en/latest/
-<<<<<<< HEAD
 
 # Concurrency in SQlite
 - https://charlesleifer.com/blog/going-fast-with-sqlite-and-python/
-
-=======
 - Firebase in flask web app https://firebase.google.com/docs/database/admin/start#python
->>>>>>> webBackend
 
 # APT packages installed
 
 - sqlite3
 - rpi.gpio-common
+- gpiozero
 
 # PIP Packages installed
 

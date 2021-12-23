@@ -161,23 +161,26 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id):
 	print('lat: {} - lng: {}'.format(latitude, longitude))
 	
 	# Insert data into database	
-	data = [trip_id.value, "".join(id_vehicle.value), time.time(), 
+	# TODO: ADD: speed, breakPosition, accPosition
+	data = [trip_id.value, "".join(id_vehicle.value), int(time.time()*1000), 0*3.6,
 			accX, accY, accZ, 
 			velAngX, velAngY, velAngZ,
 			magX, magY, magZ,
-			latitude, longitude, event_class
+			latitude, longitude, 
+			0, 0, event_class
 			]
 	print("Saving data at: ", time.strftime('%H:%M:%S',time.gmtime(time.time())))
 	
 	query = '''INSERT INTO vehicledata
 			(
-				idTrip, idVehicle, timestamp, 
+				idTrip, idVehicle, timestamp, speed,
 				accX, accY,	accZ,
 				velAngX, velAngY, velAngZ,
 				magX, magY,	magZ,
-				latitude, longitude, eventClass
+				latitude, longitude, 
+				accPosition, breakPosition, eventClass
 			)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
 	
 	cursor.execute(query, data)
 	
@@ -216,11 +219,12 @@ def modify_local_db_data(data):
 	for row in data:
 		# Frequency data
 		try:
-			row['meanFrequency'] = round((row['capturedData'])/(row['maxTime']-row['time']),2)
+			row['meanFrequency'] = round((row['capturedData'])*1000/(row['maxTime']-row['time']),2)
 		except ZeroDivisionError as e:
 			row['meanFrequency'] = 0
 		# Time data
-		row['time'] = datetime.datetime.fromtimestamp(row['time']).strftime('%Y-%m-%d %H:%M')
+		print(int(row['time']))
+		row['time'] = datetime.datetime.fromtimestamp(row['time']/1000).strftime('%Y-%m-%d %H:%M')
 
 	return data
 
