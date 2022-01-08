@@ -3,7 +3,7 @@ import serial
 import sqlite3
 import time
 
-ser = serial.Serial('/dev/ttyAMA0', 9600, timeout=5.0)
+ser = serial.Serial('/dev/ttyS0', 9600, timeout=5.0)
 
 # Gps frequency adjustment - once execution
 '''
@@ -20,6 +20,7 @@ while (1):
 		line = ''.join(map(chr,ser.readline()))
 		if line[0:6] == "$GPRMC":
 			newmsg = pynmea2.parse(line)
+			print(newmsg)
 			lat = newmsg.latitude
 			lng = newmsg.longitude
 			gps = "Latitude=" + str(lat) + " and Longitude=" + str(lng)

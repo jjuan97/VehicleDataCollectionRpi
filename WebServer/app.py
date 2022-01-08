@@ -14,7 +14,8 @@ import time
 import sqlite3
 import firebase_admin
 
-from imu import mpu6050
+#from imu import mpu6050 # If use mpu6050
+from imu import mpu9250_read
 from gps import gps_module
 from gpiozero import Button # Button to detect near-crash
 
@@ -138,10 +139,11 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id):
 	"""
 
 	# Load Kinematic data
-	kinematic_data = mpu6050.read_data()
+	#kinematic_data = mpu6050.read_data()
+	kinematic_data = mpu9250_read.read_data()
 	accX, accY, accZ = kinematic_data[0]
 	velAngX, velAngY, velAngZ = kinematic_data[1]
-	magX, magY, magZ = 0, 0, 0 #kinematic_data[2]
+	magX, magY, magZ = kinematic_data[2]
 	
 	# Chek if near-crash button is pressed
 	
@@ -191,9 +193,9 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id):
 		data_to_show["velAngX"]= velAngX
 		data_to_show["velAngY"]= velAngY
 		data_to_show["velAngZ"]= velAngZ
-		data_to_show["magX"]= 0
-		data_to_show["magY"]= 0
-		data_to_show["magZ"]= 0
+		data_to_show["magX"]= magX
+		data_to_show["magY"]= magY
+		data_to_show["magZ"]= magZ
 		data_to_show["lat"]= latitude
 		data_to_show["lng"]= longitude
 		send_data(data_to_show)
@@ -224,7 +226,7 @@ def modify_local_db_data(data):
 			row['meanFrequency'] = 0
 		# Time data
 		print(int(row['time']))
-		row['time'] = datetime.datetime.fromtimestamp(row['time']/1000).strftime('%Y-%m-%d %H:%M')
+		row['time'] = datetime.datetime.fromtimestamp(row['time']/1000).strftime('%d-%b-%Y %H:%M')
 
 	return data
 
