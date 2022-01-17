@@ -39,20 +39,47 @@
     </section>
 
     <section class="section py-0">
-        <div class="columns">
-            <div class="field column">
+        <div class="columns is-multiline is-mobile">
+            <div class="field column is-half-mobile is-one-third-tablet">
                 <label class="label">Frequency (Hz):</label>
                 <div class="control">
-                  <input class="input" type="number" placeholder="e.g. 20" data-error-msg="freq-error-msg">
+                  <input name="frequency" class="input" type="number" placeholder="e.g. 20" data-error-msg="freq-error-msg">
                   <p class="help is-danger is-hidden" id="freq-error-msg">Enter a valid frequency and Greater than zero</p>
                 </div>
             </div>
-            <div class="field column">
+            <div class="field column is-half-mobile is-one-quarter-tablet">
                 <label class="label">ID Vehicle:</label>
                 <div class="control">
-                    <input class="input" type="text" placeholder="e.g. Renault sandero - Juan" data-error-msg="vehicle-error-msg">
+                    <!--
+                    <input class="input" type="text" placeholder="e.g. Renault sandero - Juan" data-error-msg="vehicle-error-msg"> 
+                    -->
+                    <div class="select is-info">
+                        <select name="vehicle" data-error-msg="vehicle-error-msg">
+                            <option selected disabled>Select a Vehicle</option>
+                            <option value="Vehículo 1">Vehicle 1</option>
+                            <option value="Vehículo 2">Vehicle 2</option>
+                            <option value="Vehículo 3">Vehicle 3</option>
+                            <option value="Vehículo 4">Vehicle 4</option>
+                        </select>
+                    </div>
+                    <p class="help is-danger is-hidden" id="vehicle-error-msg">You must select an option</p>
                 </div>
                 <p class="help is-danger is-hidden" id="vehicle-error-msg">Enter a id for this vehicle</p>
+            </div>
+            <div class="field column is-half-mobile is-one-quarter-tablet">
+                <label class="label">Ruta:</label>
+                <div class="control">
+                    <div class="select is-info">
+                        <select name="route" data-error-msg="route-error-msg">
+                            <option selected disabled>Select a route</option>
+                            <option value="Ruta 1">Route 1</option>
+                            <option value="Ruta 2">Route 2</option>
+                            <option value="Ruta 3">Route 3</option>
+                            <option value="Ruta 4">Route 4</option>
+                        </select>
+                    </div>
+                    <p class="help is-danger is-hidden" id="route-error-msg">You must select an option</p>
+                </div>
             </div>
 
         </div>

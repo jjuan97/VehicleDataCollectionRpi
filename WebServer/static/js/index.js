@@ -1,24 +1,38 @@
 const navbarMenu = document.getElementById("navbar");
 const navbarBtn = document.getElementById("navbar-btn");
 const recordingBtn = document.getElementById('recording-btn');
-const inputs = document.querySelectorAll('input');
+const inputs = [
+	...document.querySelectorAll('input'), 
+	...document.querySelectorAll('select')
+];
 
 let recording = false;
 let badInputs = false;
-let body = {};
+let requestBody = {};
 
 const validations = {
-	'number': (value) => {
+	'frequency': (input) => {
+		let value = input.value;
 		if (Number(value) > 0 ){
-			body.freq = Number(value);
+			requestBody.freq = Number(value);
 			return true;
 		}
 		else
 			return false;
 	},
-	'text': (value) => {
-		if (value !== "" ){
-			body.idVehicle = value;
+	'vehicle': (select) => {
+		let index = select.selectedIndex;
+		if (Number(index) != 0){
+			requestBody.idVehicle = select.value;
+			return true;
+		}
+		else
+			return false;
+	},
+	'route': (select) => {
+		let index = select.selectedIndex;
+		if (Number(index) != 0){
+			requestBody.route = select.value;
 			return true;
 		}
 		else
@@ -35,7 +49,7 @@ function validateInputs(){
 	let validationResults = [];
 	
 	inputs.forEach(input => {
-		let isOk = validations[input.type](input.value);
+		let isOk = validations[input.name](input);
 		validationResults.push( isOk );
 		if (isOk)
 			document.getElementById(input.dataset.errorMsg).classList.add('is-hidden')
@@ -46,7 +60,6 @@ function validateInputs(){
 }
 
 function disableInputs (state) {
-	const inputs = document.querySelectorAll('input');
 	inputs.forEach(i => {
 		i.disabled = state;
 	});
@@ -75,13 +88,13 @@ function startStopRecording (e) {
 }
 
 async function sendRequest(state){
-	body.recording = state;
+	requestBody.recording = state;
 	const data = await fetch('./recordingTask', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify(body)
+		body: JSON.stringify(requestBody)
 	});
 	const response = await data.json();
 	console.log(response);

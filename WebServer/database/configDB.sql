@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS vehicledata (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	idTrip INTEGER,
 	idVehicle TEXT,
+	route TEXT,
 	timestamp NUMBER,
 	speed NUMBER,
 	accX NUMBER,

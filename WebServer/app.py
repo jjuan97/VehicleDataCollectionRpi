@@ -41,6 +41,7 @@ db_temp = './database/locationdatabase.db'
 recording = False
 firstRecording = True
 id_vehicle = Array('u', list('defaultID'))
+route = Array('u', list('defaultID'))
 period = Value('d', 20)
 time_elapsed = Value('d', 0)
 trip_id = Value('i', -1)
@@ -128,7 +129,7 @@ def reading_gps_data (writer):
 		#print('lat: {} - lng: {}'.format(latitude, longitude))
 
 
-def saving_task (conn, cursor, reader, id_vehicle, t, trip_id):
+def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 	
 	"""Save all captured data
 	This function captured and save data from all modules
@@ -164,7 +165,9 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id):
 	
 	# Insert data into database	
 	# TODO: ADD: speed, breakPosition, accPosition
-	data = [trip_id.value, "".join(id_vehicle.value), int(time.time()*1000), 0*3.6,
+	data = [trip_id.value, "".join(id_vehicle.value), 
+			"".join(route.value),
+			int(time.time()*1000), 0*3.6,
 			accX, accY, accZ, 
 			velAngX, velAngY, velAngZ,
 			magX, magY, magZ,
@@ -175,14 +178,14 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id):
 	
 	query = '''INSERT INTO vehicledata
 			(
-				idTrip, idVehicle, timestamp, speed,
+				idTrip, idVehicle, route, timestamp, speed,
 				accX, accY,	accZ,
 				velAngX, velAngY, velAngZ,
 				magX, magY,	magZ,
 				latitude, longitude, 
 				accPosition, breakPosition, eventClass
 			)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
 	
 	cursor.execute(query, data)
 	
@@ -248,6 +251,7 @@ def send_trip_data_firebase(data) -> bool:
 	status = False
 	try:
 		trip_data = dict((k, data[k]) for k in list(data.keys())[1:] if k in data)
+		print(data)
 		trip_data["device"] = "Raspberry"
 		reference = ref.child('tripList').push(trip_data)
 		query = f"""SELECT * FROM vehicledata WHERE idTrip = {data['tripId']}"""
@@ -284,10 +288,11 @@ def index():
 
 @app.route('/recordingTask', methods=['POST'])
 def handleRecordingTask():
-	global recording, connection_db, cursor_db, id_vehicle, period, time_elapsed
+	global recording, connection_db, cursor_db, id_vehicle, route, period, time_elapsed
 	request_data = request.get_json()
 	recording = request_data['recording']
 	id_vehicle.value = list(request_data['idVehicle'])
+	route.value = list(request_data['route'])
 	period.value = 1/int(request_data['freq'])
 
 	response = 'Rpi is now {}'.format('recording' if (recording) else 'stopped')
@@ -302,7 +307,7 @@ def handleRecordingTask():
 		time_elapsed.value = time.time()
 		scheduler.add_job(saving_task, 
 			args=[connection_db, cursor_db, reader, id_vehicle,
-				time_elapsed, trip_id],
+				time_elapsed, trip_id, route],
 			trigger='interval', seconds=period.value, id="saving_task")
 		
 		if (firstRecording):
@@ -341,6 +346,7 @@ def trips():
 					MIN(timestamp) AS time,
 					MAX(timestamp) AS maxTime,
 					idVehicle,
+					route,
 					COUNT(accX) AS capturedData,
 					SUM(eventClass) AS nearcrashesData,
 					AVG(id) AS meanFrequency

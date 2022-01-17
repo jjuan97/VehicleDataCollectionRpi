@@ -48,6 +48,7 @@
                         <th class="has-text-info-dark">Trip Id</th>
                         <th class="has-text-info-dark">Trip Time</th>
                         <th class="has-text-info-dark">Vehicle Id</th>
+                        <th class="has-text-info-dark">Route</th>
                         <th class="has-text-info-dark"><abbr title="Captured Data">Cap. Data</abbr></th>
                         <th class="has-text-info-dark"><abbr title="Near-Crash Kinematic Data">Near-Crash Data</abbr>
                         </th>
@@ -60,6 +61,7 @@
                         <th >{{row.idTrip}}</th>
                         <td>{{row.time}}</td>
                         <td>{{row.idVehicle}}</td>
+                        <td>{{row.route}}</td>
                         <td>{{row.capturedData}}</td>
                         <td>{{row.nearcrashesData}}</td>
                         <td>{{row.meanFrequency}}</td>
@@ -91,6 +93,7 @@
                             <p class="is-size-6">Trip id: <b id="trip-id"></b></p>
                             <p class="is-size-6">Trip time: <b id="trip-time"></b></p>
                             <p class="is-size-6">Vehicle id: <b id="vehicle-id"></b></p>
+                            <p class="is-size-6">Route: <b id="route"></b></p>
                         </div>
                         <div class="columns is-mobile is-centered">
                             <div class="column is-narrow">
