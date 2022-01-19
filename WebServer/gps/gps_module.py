@@ -3,7 +3,7 @@ import serial
 import time
 from multiprocessing import Process
 
-ser = serial.Serial('/dev/ttyAMA0', 9600, timeout=5)
+ser = serial.Serial('/dev/ttyS0', 9600, timeout=5)
 FREQ5HZ = b'\xB5\x62\x06\x08\x06\x00\xC8\x00\x01\x00\x01\x00\xDE\x6A'
 FREQ1HZ = b'\xB5\x62\x06\x08\x06\x00\xE8\x03\x01\x00\x01\x00\x01\x39'
 
