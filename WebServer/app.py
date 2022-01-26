@@ -17,6 +17,7 @@ import firebase_admin
 #from imu import mpu6050 # If use mpu6050
 from imu import mpu9250_read
 from gps import gps_module
+from obd_2 import obd_module
 from gpiozero import Button # Button to detect near-crash
 
 from firebase_admin import credentials
@@ -123,10 +124,12 @@ def delete_data(query):
 def reading_gps_data (writer):
 	while True:
 		latitude, longitude = gps_module.read_GPS_position()
+		# TODO: Add obd data in database
+		speed, accel_pos = obd_module.read_data()
 		writer.execute('''UPDATE gpslocation
-			SET id = 0, latitude = ?, longitude = ?
-			WHERE id=0''', [latitude,longitude] )		
-		#print('lat: {} - lng: {}'.format(latitude, longitude))
+			SET id = 0, latitude = ?, longitude = ?, speed=?, acc_pos=?
+			WHERE id=0''', [latitude,longitude, float(speed.split(" ")[0]), float(accel_pos.split(" ")[0]) ] )		
+		print('lat: {} - lng: {} otros: {} {}'.format(latitude, longitude, float(speed.split(" ")[0]), float(accel_pos.split(" ")[0])))
 
 
 def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
@@ -161,18 +164,20 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 	for row in reader.execute('SELECT * FROM gpslocation WHERE id=0'):
 		latitude = row[1]
 		longitude = row[2]
+		speed = row[3]
+		acce_pos = row[4]
 	print('lat: {} - lng: {}'.format(latitude, longitude))
 	
 	# Insert data into database	
 	# TODO: ADD: speed, breakPosition, accPosition
 	data = [trip_id.value, "".join(id_vehicle.value), 
 			"".join(route.value),
-			int(time.time()*1000), 0*3.6,
+			int(time.time()*1000), speed*3.6,
 			accX, accY, accZ, 
 			velAngX, velAngY, velAngZ,
 			magX, magY, magZ,
 			latitude, longitude, 
-			0, 0, event_class
+			acce_pos, 0, event_class
 			]
 	print("Saving data at: ", time.strftime('%H:%M:%S',time.gmtime(time.time())))
 	

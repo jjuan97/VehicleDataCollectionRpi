@@ -42,6 +42,7 @@ La documentación usada para lograr el correcto funcionamiento es la siguiente:
 - pip install FaBo9Axis_MPU9250
 - pip install mpu9250-jmdev
 - firebase-admin
+- obd
 
 Package                          Version
 -------------------------------- -----------
