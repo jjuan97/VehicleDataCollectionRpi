@@ -1,7 +1,7 @@
-from os import truncate
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 from flask import g
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from multiprocessing import Process, Value, Array, Lock
 
@@ -14,14 +14,17 @@ import time
 import sqlite3
 import firebase_admin
 
+# Modules for variable detection
 #from imu import mpu6050 # If use mpu6050
-from imu import mpu9250_read
+from imu import mpu9250_module
 from gps import gps_module
 from obd_2 import obd_module
 from gpiozero import Button # Button to detect near-crash
 
+# Firebase functionalities
 from firebase_admin import credentials
 from firebase_admin import db
+
 
 # Firebase configuration
 cred = credentials.Certificate("../vehicledatacollected-firebase-adminsdk-dfzqq-f41fc7bb31.json")
@@ -36,8 +39,9 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 scheduler = BackgroundScheduler(timezone="America/Bogota", job_defaults={'max_instances': 4})
 
-db = './database/vehicledatabase.db'
-db_temp = './database/locationdatabase.db'
+# Database names
+LOCAL_DB = './database/vehicledatabase.db'
+TEMPORAL_DB = './database/temporaldatabase.db'
 
 recording = False
 firstRecording = True
@@ -49,15 +53,15 @@ trip_id = Value('i', -1)
 
 connection_db = None
 cursor_db = None
-writer = sqlite3.connect(db_temp, isolation_level=None)
+writer = sqlite3.connect(TEMPORAL_DB, isolation_level=None)
 writer.execute('pragma journal_mode=wal;')
-reader = sqlite3.connect(db_temp, isolation_level=None)
+reader = sqlite3.connect(TEMPORAL_DB, isolation_level=None)
 reader.execute('pragma journal_mode=wal;')
 
 data_to_show = { "accX": 0, "accY": 0, "accZ": 0,
 	"velAngX": 0, "velAngY": 0, "velAngZ": 0,
 	"magX": 0, "magY": 0, "magZ": 0,
-	"lat": 0, "lng": 0
+	"lat": 0, "lng": 0,"speed": 0, "accPosition": 0
 	}
 	
 button = Button(17) # GPIO where button is connected
@@ -67,7 +71,7 @@ def create_connection():
 	"""Database connection
 	"""
 	try:
-		conn = sqlite3.connect(db)
+		conn = sqlite3.connect(LOCAL_DB)
 	except Error as e:
 		print(e)
 	return conn
@@ -75,7 +79,7 @@ def create_connection():
 def create_database():
 	"""Database creation
 	"""
-	with open('./database/configDB.sql', 'r') as sql_file:
+	with open('./database/configVehicleDB.sql', 'r') as sql_file:
 		sql_script = sql_file.read()
 
 	db_connection = create_connection()
@@ -85,7 +89,7 @@ def create_database():
 	cursor.close()
 	db_connection.close()
 	
-	with open('./database/configDB_temp.sql', 'r') as sql_file:
+	with open('./database/configTemporalDB.sql', 'r') as sql_file:
 		sql_script = sql_file.read()
 	writer.executescript(sql_script)
 	
@@ -98,7 +102,7 @@ def sqlite_dict(cursor, row):
 def get_db():
 	db_conn = getattr(g, '_database', None)
 	if db_conn is None:
-		db_conn = g._database = sqlite3.connect(db)
+		db_conn = g._database = sqlite3.connect(LOCAL_DB)
 	db_conn.row_factory = sqlite_dict
 	return db_conn
 
@@ -144,7 +148,7 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 
 	# Load Kinematic data
 	#kinematic_data = mpu6050.read_data()
-	kinematic_data = mpu9250_read.read_data()
+	kinematic_data = mpu9250_module.read_data()
 	accX, accY, accZ = kinematic_data[0]
 	velAngX, velAngY, velAngZ = kinematic_data[1]
 	magX, magY, magZ = kinematic_data[2]
@@ -165,19 +169,19 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 		latitude = row[1]
 		longitude = row[2]
 		speed = row[3]
-		acce_pos = row[4]
+		acc_pos = row[4]
 	print('lat: {} - lng: {}'.format(latitude, longitude))
 	
 	# Insert data into database	
 	# TODO: ADD: speed, breakPosition, accPosition
 	data = [trip_id.value, "".join(id_vehicle.value), 
 			"".join(route.value),
-			int(time.time()*1000), speed*3.6,
+			int(time.time()*1000), speed,
 			accX, accY, accZ, 
 			velAngX, velAngY, velAngZ,
 			magX, magY, magZ,
 			latitude, longitude, 
-			acce_pos, 0, event_class
+			acc_pos, 0, event_class
 			]
 	print("Saving data at: ", time.strftime('%H:%M:%S',time.gmtime(time.time())))
 	
@@ -206,6 +210,8 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 		data_to_show["magZ"]= magZ
 		data_to_show["lat"]= latitude
 		data_to_show["lng"]= longitude
+		data_to_show["speed"] = speed
+		data_to_show["accPosition"] = acc_pos
 		send_data(data_to_show)
 		t.value = time.time()
 		
