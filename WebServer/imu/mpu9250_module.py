@@ -1,6 +1,5 @@
 from imu.mpu9250 import *
 import time
-import sys
 
 time.sleep(1) # delay necessary to allow mpu9250 to settle
 
@@ -14,7 +13,7 @@ def print_data(num: int = 10):
         ax,ay,az,wx,wy,wz = mpu6050_conv() # read and convert mpu6050 data
         mx,my,mz = AK8963_conv() # read and convert AK8963 magnetometer data
         print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2"%(ax,ay,az))
-        print("Gyro X:%.2f, Y: %.2f, Z: %.2f degrees/s"%(wx,wy,wz))
+        print("Gyro X:%.2f, Y: %.2f, Z: %.2f rad/s"%(wx,wy,wz))
         print("Magnetometer: X:%.2f, Y: %.2f, Z: %.2f uT"%(mx,my,mz))
         print("")
 

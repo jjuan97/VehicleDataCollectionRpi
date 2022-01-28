@@ -34,7 +34,7 @@ firebase_admin.initialize_app(cred, {
 })
 ref = db.reference('/')
 
-# Scheduler and web socket configuration
+# Scheduler and Web Socket configuration
 eventlet.monkey_patch(thread=True, time=True)
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -42,7 +42,8 @@ scheduler = BackgroundScheduler(timezone="America/Bogota", job_defaults={'max_in
 
 # Database names
 LOCAL_DB = './database/vehicledatabase.db'
-TEMPORAL_DB = './database/temporaldatabase.db'
+TEMPORAL_LOCATION_DB = './database/templocation.db'
+TEMPORAL_OBD_DB = './database/tempobd.db'
 
 # Variables
 recording = False
@@ -53,13 +54,18 @@ period = Value('d', 20)
 time_elapsed = Value('d', 0)
 trip_id = Value('i', -1)
 
-# Config wal mode in temporal database
+# Config wal mode in temporal databases
 connection_db = None
 cursor_db = None
-writer = sqlite3.connect(TEMPORAL_DB, isolation_level=None)
+writer = sqlite3.connect(TEMPORAL_LOCATION_DB, isolation_level=None)
 writer.execute('pragma journal_mode=wal;')
-reader = sqlite3.connect(TEMPORAL_DB, isolation_level=None)
+reader = sqlite3.connect(TEMPORAL_LOCATION_DB, isolation_level=None)
 reader.execute('pragma journal_mode=wal;')
+
+obd_writer = sqlite3.connect(TEMPORAL_OBD_DB, isolation_level=None)
+obd_writer.execute('pragma journal_mode=wal;')
+obd_reader = sqlite3.connect(TEMPORAL_OBD_DB, isolation_level=None)
+obd_reader.execute('pragma journal_mode=wal;')
 
 # Data to show in web socket functions
 data_to_show = { "accX": 0, "accY": 0, "accZ": 0,
@@ -81,8 +87,8 @@ def create_connection():
 		print(e)
 	return conn
 
-def create_database():
-	"""Database creation
+def create_databases():
+	"""Databases creation
 
 	Build a database from a sql file configuration
 	"""
@@ -96,9 +102,13 @@ def create_database():
 	cursor.close()
 	db_connection.close()
 	
-	with open('./database/configTemporalDB.sql', 'r') as temporal_sql_file:
-		temporal_sql_script = temporal_sql_file.read()
-	writer.executescript(temporal_sql_script)
+	with open('./database/configTempLocationDB.sql', 'r') as templocation_sql_file:
+		templocation_sql_script = templocation_sql_file.read()
+	writer.executescript(templocation_sql_script)
+
+	with open('./database/configTempOBD.sql', 'r') as temp_obd_sql_file:
+		temp_obd_sql_script = temp_obd_sql_file.read()
+	obd_writer.executescript(temp_obd_sql_script)
 
 def sqlite_dict(cursor, row):
 	"""Row factory method
@@ -170,29 +180,30 @@ def reading_gps_data (writer):
 	"""
 	while True:
 		latitude, longitude = gps_module.read_GPS_position()
-		writer.execute('''UPDATE temporalData
-			SET id = 0, latitude = ?, longitude = ?, speed=?, acc_pos=?
-			WHERE id=0''', [latitude,longitude, float(speed.split(" ")[0]), float(accel_pos.split(" ")[0]) ] )		
-		print('lat: {} - lng: {} otros: {} {}'.format(latitude, longitude, float(speed.split(" ")[0]), float(accel_pos.split(" ")[0])))
+		writer.execute('''UPDATE gpslocation
+			SET id = 0, latitude = ?, longitude = ?
+			WHERE id=0''', [latitude, longitude])		
+		print('lat: {} - lng: {} otros: {} {}'.format(latitude, longitude))
 
 def reading_obd_data(obd_writer):
 	speed = 0
 	acc_pos = 0
 	while True:
-		# TODO: Add obd data in database
+		# TODO: Add real obd data to database
 		#speed, acc_pos = obd_module.read_data()
+		#float(speed.split(" ")[0]), float(accel_pos.split(" ")[0])
 		speed += 1
 		acc_pos += 10
-		obd_writer.execute('''UPDATE temporalOBDData SET id = 0, speed = ?, acc_pos=? WHERE id=0''', [speed, acc_pos])
-		time.sleep(10)
-
-
+		obd_writer.execute('''UPDATE obddata 
+			SET id = 0, speed = ?, acc_pos=? 
+			WHERE id=0''', [speed, acc_pos])
+		time.sleep(4)
 
 def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
-	
 	"""Save all captured data
+
 	This function captured and save data from all modules
-	(IMU, GPS, OBD-II), the data is saved into database
+	(IMU, GPS, OBD-II), the data is saved into database.
 	
 	Keyword arguments:
 	temp_data -- List with this variables [latitude, longitude, conditional]
@@ -217,12 +228,14 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 	# Load GPS data
 	latitude = 0
 	longitude = 0
-	for row in reader.execute('SELECT * FROM temporalData WHERE id=0'):
+	for row in reader.execute('SELECT * FROM gpslocation WHERE id=0'):
 		latitude = row[1]
 		longitude = row[2]
-		speed = row[3]
-		acc_pos = row[4]
 	print('lat: {} - lng: {}'.format(latitude, longitude))
+
+	for row in obd_reader.execute('SELECT * FROM obddata WHERE id=0'):
+		speed = row[1]
+		acc_pos = row[2]
 	
 	# Insert data into database	
 	data = [trip_id.value, "".join(id_vehicle.value), 
@@ -232,7 +245,7 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 			velAngX, velAngY, velAngZ,
 			magX, magY, magZ,
 			latitude, longitude, 
-			acc_pos, 0, event_class
+			acc_pos, 0, event_class, True
 			]
 	print("Saving data at: ", time.strftime('%H:%M:%S',time.gmtime(time.time())))
 	
@@ -243,9 +256,9 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 				velAngX, velAngY, velAngZ,
 				magX, magY,	magZ,
 				latitude, longitude, 
-				accPosition, breakPosition, eventClass
+				accPosition, breakPosition, eventClass, active
 			)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
 	
 	cursor.execute(query, data)
 	
@@ -431,11 +444,20 @@ def handle_connection(data):
 	socketio.emit('vehicleDataConnect', json.dumps({"msg": "hola"}))
 
 
-if __name__ == '__main__':
+def main():
 	try:
-		create_database()
-		p = Process(target=reading_gps_data, args=(writer,), daemon=True)
-		p.start()
-		socketio.run(app, debug=True, port=8080, host='0.0.0.0')		
+		create_databases()
+		# Start 2 multiprocess
+		location_p = Process(target=reading_gps_data, args=(writer,), daemon=True)
+		obd_p = Process(target=reading_obd_data, args=(obd_writer,), daemon=True)
+		location_p.start()
+		obd_p.start()
+		# Run principal thread app
+		socketio.run(app, debug=True, port=8080, host='0.0.0.0')
+
 	except KeyboardInterrupt:
-		p.close()
+		location_p.close()
+		obd_p.close()
+
+if __name__ == '__main__':
+	main()

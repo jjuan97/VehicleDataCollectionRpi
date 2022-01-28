@@ -3,6 +3,17 @@
 # refer to datasheet and register map for full explanation
 
 import smbus,time
+from math import radians
+
+# Config MPU6050 Ranges
+range_accel_indx = 0 # 0 = ±2g, 1 = ±4g, 2 = ±8g and  3 = ±16g
+range_gyro_indx = 0 # 0 = ±250°/s, 1 = ±500°/s, 2 = ±1000°/s and  3 = ±2000°/s
+
+# AK8963 magnetometer sensitivity: 4900 uT
+mag_sens = 4900.0
+
+# Const values
+STANDARD_GRAVITY = 9.80665
 
 def MPU6050_start():
     # alter sample rate (stability)
@@ -18,22 +29,24 @@ def MPU6050_start():
     #Write to Configuration register
     bus.write_byte_data(MPU6050_ADDR, CONFIG, 0)
     time.sleep(0.1)
-    #Write to Gyro configuration register
-    gyro_config_sel = [0b00000,0b010000,0b10000,0b11000] # byte registers
+    # Write to Gyro configuration register.
+    # The MPU6050 can measure angular rotation using its on-chip gyroscope
+    # with four programmable full scale ranges of ±250°/s, ±500°/s, ±1000°/s and ±2000°/s.
     gyro_config_vals = [250.0,500.0,1000.0,2000.0] # degrees/sec
-    gyro_indx = 0
-    bus.write_byte_data(MPU6050_ADDR, GYRO_CONFIG, int(gyro_config_sel[gyro_indx]))
+    gyro_config_sel = [0b00000,0b010000,0b10000,0b11000] # byte registers
+    bus.write_byte_data(MPU6050_ADDR, GYRO_CONFIG, int(gyro_config_sel[range_gyro_indx]))
     time.sleep(0.1)
-    #Write to Accel configuration register
+    # Write to Accel configuration register.
+    # The MPU6050 can measure acceleration using its on-chip accelerometer
+    # with four programmable full scale ranges of ±2g, ±4g, ±8g and ±16g.                        
+    accel_config_vals = [2.0,4.0,8.0,16.0]
     accel_config_sel = [0b00000,0b01000,0b10000,0b11000] # byte registers
-    accel_config_vals = [2.0,4.0,8.0,16.0] # g (g = 9.81 m/s^2)
-    accel_indx = 0                            
-    bus.write_byte_data(MPU6050_ADDR, ACCEL_CONFIG, int(accel_config_sel[accel_indx]))
+    bus.write_byte_data(MPU6050_ADDR, ACCEL_CONFIG, int(accel_config_sel[range_accel_indx]))
     time.sleep(0.1)
     # interrupt register (related to overflow of data [FIFO])
     bus.write_byte_data(MPU6050_ADDR, INT_ENABLE, 1)
     time.sleep(0.1)
-    return gyro_config_vals[gyro_indx],accel_config_vals[accel_indx]
+    return gyro_config_vals[range_gyro_indx], accel_config_vals[range_accel_indx]
     
 def read_raw_bits(register):
     # read accel and gyro values
@@ -49,30 +62,51 @@ def read_raw_bits(register):
     return value
 
 def mpu6050_conv():
+    """Return accelerometer and gyroscope values from MPU6050
+
+    Returns:
+    ax, ay, az: 3 axis accelerometer in m/s^2
+    wx, wy, wz: 3 axis gyroscope in rad/seg
+    """
+
     # raw acceleration bits
     acc_x = read_raw_bits(ACCEL_XOUT_H)
     acc_y = read_raw_bits(ACCEL_YOUT_H)
     acc_z = read_raw_bits(ACCEL_ZOUT_H)
-
-    # raw temp bits
-##    t_val = read_raw_bits(TEMP_OUT_H) # uncomment to read temp
-    
     # raw gyroscope bits
     gyro_x = read_raw_bits(GYRO_XOUT_H)
     gyro_y = read_raw_bits(GYRO_YOUT_H)
     gyro_z = read_raw_bits(GYRO_ZOUT_H)
 
-    #convert to acceleration in g and gyro dps
-    a_x = (acc_x/(2.0**15.0))*accel_sens
-    a_y = (acc_y/(2.0**15.0))*accel_sens
-    a_z = (acc_z/(2.0**15.0))*accel_sens
+    # Check type of range and scale raw acceleration value
+    if accel_range == 16.0: # Range 16g
+        accel_scale = 2048
+    if accel_range == 8.0:  # Range 8g
+        accel_scale = 4096
+    if accel_range == 4.0:  # Range 4g
+        accel_scale = 8192
+    if accel_range == 2.0:  # Range 2g
+        accel_scale = 16384
+    # Check type of range and scale raw gyroscope value
+    if gyro_range == 250.0: # Range ±250°/s
+        gyro_scale = 131
+    if gyro_range == 500.0: # Range ±500°/s
+        gyro_scale = 65.5
+    if gyro_range == 1000.0: # Range ±1000°/s
+        gyro_scale = 32.8
+    if gyro_range == 2000.0: # Range ±2000°/s
+        gyro_scale = 16.4
+    
+    # Setup range dependant scaling
+    a_x = (acc_x / accel_scale) * STANDARD_GRAVITY
+    a_y = (acc_y / accel_scale) * STANDARD_GRAVITY
+    a_z = (acc_z / accel_scale) * STANDARD_GRAVITY
 
-    w_x = (gyro_x/(2.0**15.0))*gyro_sens
-    w_y = (gyro_y/(2.0**15.0))*gyro_sens
-    w_z = (gyro_z/(2.0**15.0))*gyro_sens
+    w_x = radians(gyro_x / gyro_scale)
+    w_y = radians(gyro_y / gyro_scale)
+    w_z = radians(gyro_z / gyro_scale)
 
-##    temp = ((t_val)/333.87)+21.0 # uncomment and add below in return
-    return a_x,a_y,a_z,w_x,w_y,w_z
+    return a_x, a_y, a_z, w_x, w_y, w_z
 
 def AK8963_start():
     bus.write_byte_data(AK8963_ADDR,AK8963_CNTL,0x00)
@@ -138,9 +172,8 @@ HYH          = 0x06
 HZH          = 0x08
 AK8963_ST2   = 0x09
 AK8963_CNTL  = 0x0A
-mag_sens = 4900.0 # magnetometer sensitivity: 4800 uT
 
 # start I2C driver
 bus = smbus.SMBus(1) # start comm with i2c bus
-gyro_sens,accel_sens = MPU6050_start() # instantiate gyro/accel
+gyro_range, accel_range = MPU6050_start() # instantiate gyro/accel
 AK8963_start() # instantiate magnetometer
