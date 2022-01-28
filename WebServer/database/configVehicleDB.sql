@@ -18,5 +18,6 @@ CREATE TABLE IF NOT EXISTS vehicledata (
 	longitude NUMBER,
 	accPosition NUMBER,
 	breakPosition NUMBER,
-	eventClass BOOLEAN
+	eventClass BOOLEAN,
+	active BOOLEAN
 );
