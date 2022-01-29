@@ -173,42 +173,55 @@ def execute_query(query):
 
 # Multiprocess functions
 def reading_gps_data (writer):
-	"""Function to execute in multiprocesing thread
+	"""Fuunction to manage gps data in a multiprocesing thread
+	
+	First read the actual gps data, then save this in TEMPORAL_LOCATION_DB
 
 	Args:
-		writer ([type]): [description]
+		writer (sqlite3.Connection): A sqlite3 connection in wal mode
 	"""
 	while True:
 		latitude, longitude = gps_module.read_GPS_position()
 		writer.execute('''UPDATE gpslocation
 			SET id = 0, latitude = ?, longitude = ?
 			WHERE id=0''', [latitude, longitude])		
-		print('lat: {} - lng: {} otros: {} {}'.format(latitude, longitude))
+		#print('lat: {} - lng: {}'.format(latitude, longitude))
 
 def reading_obd_data(obd_writer):
-	speed = 0
-	acc_pos = 0
+	"""Fuunction to manage OBD-II data in a multiprocesing thread
+	
+	First read the actual OBD-II data, then save this in TEMPORAL_OBD_DB
+
+	Args:
+		obd_writer (sqlite3.Connection): A sqlite3 connection in wal mode
+	"""
 	while True:
-		# TODO: Add real obd data to database
-		#speed, acc_pos = obd_module.read_data()
-		#float(speed.split(" ")[0]), float(accel_pos.split(" ")[0])
-		speed += 1
-		acc_pos += 10
-		obd_writer.execute('''UPDATE obddata 
+		# TODO: Uncomment code
+		obd_data = None#obd_module.read_data()
+		if obd_data == None:
+			continue#print("OBD: No fue posible obtener los datos")
+		else:
+			speed, acc_pos = obd_data
+			obd_writer.execute('''UPDATE obddata 
 			SET id = 0, speed = ?, acc_pos=? 
 			WHERE id=0''', [speed, acc_pos])
-		time.sleep(4)
+		#float(speed.split(" ")[0]), float(accel_pos.split(" ")[0])
 
 def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
-	"""Save all captured data
-
-	This function captured and save data from all modules
-	(IMU, GPS, OBD-II), the data is saved into database.
+	"""Save all captured data into sqlite database
 	
-	Keyword arguments:
-	temp_data -- List with this variables [latitude, longitude, conditional]
+	This function captured and save data from all modules
+	(IMU, GPS, OBD-II), the data is saved into LOCAL_DB.
+	
+	Args:
+		conn ([type]): [description]
+		cursor ([type]): [description]
+		reader ([type]): [description]
+		id_vehicle ([type]): [description]
+		t ([type]): [description]
+		trip_id ([type]): [description]
+		route ([type]): [description]
 	"""
-
 	# Load Kinematic data
 	#kinematic_data = mpu6050.read_data()
 	kinematic_data = mpu9250_module.read_data()
@@ -217,23 +230,15 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 	magX, magY, magZ = kinematic_data[2]
 	
 	# Chek if near-crash button is pressed
-	
-	if button.is_pressed:
-		print("Button is pressed")
-		event_class = True
-	else:
-		print("Button is not pressed")
-		event_class = False
+	event_class = True if button.is_pressed else False
 	
 	# Load GPS data
-	latitude = 0
-	longitude = 0
-	for row in reader.execute('SELECT * FROM gpslocation WHERE id=0'):
+	for row in reader.execute('SELECT * FROM gpslocation WHERE id=0 LIMIT 1'):
 		latitude = row[1]
 		longitude = row[2]
-	print('lat: {} - lng: {}'.format(latitude, longitude))
-
-	for row in obd_reader.execute('SELECT * FROM obddata WHERE id=0'):
+	
+	# Load OBD data
+	for row in obd_reader.execute('SELECT * FROM obddata WHERE id=0 LIMIT 1'):
 		speed = row[1]
 		acc_pos = row[2]
 	
@@ -247,7 +252,6 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 			latitude, longitude, 
 			acc_pos, 0, event_class, True
 			]
-	print("Saving data at: ", time.strftime('%H:%M:%S',time.gmtime(time.time())))
 	
 	query = '''INSERT INTO vehicledata
 			(
@@ -278,7 +282,6 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 		data_to_show["accPosition"] = acc_pos
 		send_data(data_to_show)
 		t.value = time.time()
-		
 
 def send_data(data_to_show):
 	socketio.emit('vehicleData', json.dumps(data_to_show))
@@ -303,24 +306,12 @@ def modify_local_db_data(data):
 		except ZeroDivisionError as e:
 			row['meanFrequency'] = 0
 		# Time data
-		print(int(row['time']))
 		row['time'] = datetime.datetime.fromtimestamp(row['time']/1000).strftime('%d-%b-%Y %H:%M')
 
 	return data
 
-def modify_data(temp_state):
-	while temp_state[2]:
-		i = random.randrange(10)
-		print('Recording: {}, i={}'.format(temp_state[2], i))
-		if (i % 2 == 0):
-			temp_state[0] = i
-			temp_state[1] = i
-		time.sleep(0.1)
-
-
 def data_to_json(data):
 	return dict(('row '+str(i), row) for i,row in enumerate(data,1))
-
 
 def send_trip_data_firebase(data) -> bool:
 	status = False
@@ -337,11 +328,11 @@ def send_trip_data_firebase(data) -> bool:
 		status = True
 	except:
 		status = False
-		print("Upload data to firebase failed!")
+		print("ERROR FIREBASE: Upload data to firebase failed!")
 	
 	if status:
-		delete_query = f"""DELETE FROM vehicledata WHERE idTrip = {data['tripId']}"""
-		execute_query(delete_query)
+		hide_query = f"""UPDATE vehicledata SET active = 0 WHERE idTrip = {data['tripId']}"""
+		execute_query(hide_query)
 		return True;
 	else:
 		return False;
@@ -426,7 +417,7 @@ def trips():
 					COUNT(accX) AS capturedData,
 					SUM(eventClass) AS nearcrashesData,
 					AVG(id) AS meanFrequency
-				FROM vehicledata GROUP BY idTrip
+				FROM vehicledata WHERE active = 1 GROUP BY idTrip
 				"""
 		db_data = get_data(query)
 		data = modify_local_db_data(db_data)
@@ -440,7 +431,7 @@ def trips():
 
 @socketio.on('vehicleDataConnect')
 def handle_connection(data):
-	print('Incomming message: ' + data['data'])
+	print('SOCKET: Incomming message: ' + data['data'])
 	socketio.emit('vehicleDataConnect', json.dumps({"msg": "hola"}))
 
 
@@ -453,7 +444,7 @@ def main():
 		location_p.start()
 		obd_p.start()
 		# Run principal thread app
-		socketio.run(app, debug=True, port=8080, host='0.0.0.0')
+		socketio.run(app, debug=True, port=8080, host='0.0.0.0', use_reloader=False)
 
 	except KeyboardInterrupt:
 		location_p.close()
