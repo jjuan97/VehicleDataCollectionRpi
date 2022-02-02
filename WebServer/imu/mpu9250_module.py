@@ -1,21 +1,54 @@
-from imu.mpu9250 import *
+import os
+import sys
 import time
+import smbus
 
-time.sleep(1) # delay necessary to allow mpu9250 to settle
+from imusensor.MPU9250 import MPU9250
+
+address = 0x68
+bus = smbus.SMBus(1)
+imu = MPU9250.MPU9250(bus, address)
+imu.begin()
+#print("start")
+#imu.caliberateMagApprox()
+imu.loadCalibDataFromFile("./imu/calib.json")
+print("IMU: calibration data loaded")
 
 def read_data():
-    ax,ay,az,wx,wy,wz = mpu6050_conv() # read and convert mpu6050 data
-    mx,my,mz = AK8963_conv() # read and convert AK8963 magnetometer data
-    return ((ax,ay,az), (wx,wy,wz), (mx,my,mz))
-    
-def print_data(num: int = 10):
-    for i in range(0, num):
-        ax,ay,az,wx,wy,wz = mpu6050_conv() # read and convert mpu6050 data
-        mx,my,mz = AK8963_conv() # read and convert AK8963 magnetometer data
-        print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2"%(ax,ay,az))
-        print("Gyro X:%.2f, Y: %.2f, Z: %.2f rad/s"%(wx,wy,wz))
-        print("Magnetometer: X:%.2f, Y: %.2f, Z: %.2f uT"%(mx,my,mz))
-        print("")
+	imu.readSensor()
+	imu.computeOrientation()
+		
+	# Sensors values in ENU convention
+	ax = imu.AccelVals[1]
+	ay = imu.AccelVals[0]
+	az = -imu.AccelVals[2]
+	gx = imu.GyroVals[1]
+	gy = imu.GyroVals[0]
+	gz = -imu.GyroVals[2]
+	mx = imu.MagVals[1]
+	my = imu.MagVals[0]
+	mz = -imu.MagVals[2]
+	
+	return ((ax,ay,az), (gx,gy,gz), (mx,my,mz))
 
+def print_data(num: int = 100):
+	while True:
+		imu.readSensor()
+		imu.computeOrientation()
+		# Sensors values in ENU convention
+		ax = imu.AccelVals[1]
+		ay = imu.AccelVals[0]
+		az = -imu.AccelVals[2]
+		gx = imu.GyroVals[1]
+		gy = imu.GyroVals[0]
+		gz = -imu.GyroVals[2]
+		mx = imu.MagVals[1]
+		my = imu.MagVals[0]
+		mz = -imu.MagVals[2]
+		print ("Accel x: {0} ; Accel y : {1} ; Accel z : {2} (m/s^2)".format(ax, ay, az))
+		print ("Gyro x: {0} ; Gyro y : {1} ; Gyro z : {2} (rad/seg)".format(gx, gy, gz))
+		print ("Mag x: {0} ; Mag y : {1} ; Mag z : {2} (?)".format(mx, my, mz))
+		time.sleep(0.1)
+		
 if __name__ == "__main__":
-    print_data()
+	print_data()

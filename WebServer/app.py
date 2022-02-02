@@ -75,7 +75,7 @@ data_to_show = { "accX": 0, "accY": 0, "accZ": 0,
 	}
 	
 # Define the GPIO Settings in raspberry
-button = Button(17) # GPIO where button is connected
+button = Button(26) # GPIO where button is connected
 
 # DB functions (create, connect, close, get, execute_query)
 def create_connection():
