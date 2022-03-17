@@ -6,14 +6,17 @@ from tqdm import trange
 connection = obd.OBD('/dev/rfcomm0', 9600) # auto-connects to USB or RF port
 
 def read_data():
-	res_accel_pos = connection.query(obd.commands.THROTTLE_POS)
-	res_speed = connection.query(obd.commands.SPEED)
-	
-	if not res_accel_pos.is_null() and not res_speed.is_null():
-		speed = res_speed.value
-		accel_pos = res_accel_pos.value
-		return (speed.magnitude , accel_pos.magnitude)
-	else:
+	try:
+		res_accel_pos = connection.query(obd.commands.THROTTLE_POS)
+		res_speed = connection.query(obd.commands.SPEED)
+		
+		if not res_accel_pos.is_null() and not res_speed.is_null():
+			speed = res_speed.value
+			accel_pos = res_accel_pos.value
+			return (speed.magnitude , accel_pos.magnitude)
+		else:
+			return None;
+	except:
 		return None;
 
 def print_data():

@@ -199,7 +199,8 @@ def reading_obd_data(obd_writer):
 		# TODO: Uncomment code
 		obd_data = None#obd_module.read_data()
 		if obd_data == None:
-			continue#print("OBD: No fue posible obtener los datos")
+			#print("OBD: No fue posible obtener los datos")
+			continue
 		else:
 			speed, acc_pos = obd_data
 			obd_writer.execute('''UPDATE obddata 
