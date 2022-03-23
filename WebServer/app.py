@@ -197,7 +197,7 @@ def reading_obd_data(obd_writer):
 	"""
 	while True:
 		# TODO: Uncomment code
-		obd_data = None#obd_module.read_data()
+		obd_data = obd_module.read_data()
 		if obd_data == None:
 			#print("OBD: No fue posible obtener los datos")
 			continue

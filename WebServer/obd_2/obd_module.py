@@ -13,6 +13,7 @@ def read_data():
 		if not res_accel_pos.is_null() and not res_speed.is_null():
 			speed = res_speed.value
 			accel_pos = res_accel_pos.value
+			print(speed.magnitude, accel_pos.magnitude)
 			return (speed.magnitude , accel_pos.magnitude)
 		else:
 			return None;
