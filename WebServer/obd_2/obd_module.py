@@ -2,7 +2,6 @@ import obd
 from obd import OBDStatus
 import time
 from tqdm import trange
-
 connection = obd.OBD('/dev/rfcomm0', 9600) # auto-connects to USB or RF port
 
 def read_data():
@@ -13,7 +12,6 @@ def read_data():
 		if not res_accel_pos.is_null() and not res_speed.is_null():
 			speed = res_speed.value
 			accel_pos = res_accel_pos.value
-			print(speed.magnitude, accel_pos.magnitude)
 			return (speed.magnitude , accel_pos.magnitude)
 		else:
 			return None;
@@ -25,7 +23,7 @@ def print_data():
 		obd_data = read_data()
 		if obd_data == None:
 			print("No vehicle data")
-		else:			
+		else:
 			t = time.time()
 			print(f"Velocidad actual: {speed}, Posición del pedal: {accel_pos}, tiempo: {t}")
 	

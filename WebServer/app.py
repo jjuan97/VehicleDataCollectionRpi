@@ -197,7 +197,7 @@ def reading_obd_data(obd_writer):
 	"""
 	while True:
 		# TODO: Uncomment code
-		obd_data = obd_module.read_data()
+		obd_data = None#obd_module.read_data()
 		if obd_data == None:
 			#print("OBD: No fue posible obtener los datos")
 			continue
@@ -206,7 +206,6 @@ def reading_obd_data(obd_writer):
 			obd_writer.execute('''UPDATE obddata 
 			SET id = 0, speed = ?, acc_pos=? 
 			WHERE id=0''', [speed, acc_pos])
-		#float(speed.split(" ")[0]), float(accel_pos.split(" ")[0])
 
 def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 	"""Save all captured data into sqlite database
@@ -251,7 +250,7 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 			velAngX, velAngY, velAngZ,
 			magX, magY, magZ,
 			latitude, longitude, 
-			acc_pos, 0, event_class, True
+			acc_pos, event_class, True
 			]
 	
 	query = '''INSERT INTO vehicledata
@@ -261,9 +260,9 @@ def saving_task (conn, cursor, reader, id_vehicle, t, trip_id, route):
 				velAngX, velAngY, velAngZ,
 				magX, magY,	magZ,
 				latitude, longitude, 
-				accPosition, breakPosition, eventClass, active
+				accPosition, eventClass, active
 			)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
 	
 	cursor.execute(query, data)
 	
